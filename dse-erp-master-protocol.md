@@ -101,6 +101,14 @@ D:\DSE Production (PostgreSQL 16 on port 55432)
 >    - Arbitrary root `.md` files outside the whitelist are strictly banned.
 > 5. **Sync Protection:**
 >    - Automated robocopy sync scripts must never introduce extraneous files into `D:\JavaProject\` or `D:\GitHub\`.
+> 6. **Mandatory Universal Protocol Synchronization Across All Folders:**
+>    - Whenever `dse-erp-master-protocol.md` or `GEMINI.md` is updated, Antigravity MUST automatically synchronize the updated file across ALL 4 ecosystem repositories and tiers:
+>      - Tier 1 Active Dev: `D:\Antigravity-Dev\Jasvi-Desktop`, `D:\Antigravity-Dev\Jasvi-Admin`, `D:\Antigravity-Dev\Jasvi-UserView`, `D:\Antigravity-Dev\Jasvi-Mobile`, `D:\ERP Website`, `D:\ERP Website\admin`
+>      - Tier 2 User Testing: `D:\JavaProject\Jasvi-Desktop`, `D:\JavaProject\Jasvi-Admin`, `D:\JavaProject\Jasvi-UserView`, `D:\JavaProject\Jasvi-Mobile`
+>      - Tier 3 Pre-Release Staging: `D:\GitHub\ReleaseSource-Desktop`, `D:\GitHub\ReleaseSource-UserView`
+>      - Tier 4 Git Target Repos: `D:\GitHub\Jasvi-Desktop`, `D:\GitHub\Jasvi-Admin`, `D:\GitHub\Jasvi-UserView`, `D:\GitHub\Jasvi-Mobile`
+>      - Global Rule Directory: `C:\Users\JATIN DHAMELIYA\.gemini\config\rules\dse-erp-master-protocol.md`
+>    - This guarantees that all folders and workspaces across all conversations remain 100% synchronized with zero configuration drift.
 
 ### 1.6 Mandatory Investigation, Confirmation & Zero-Assumption Protocol
 > **BINDING OPERATING RULES FOR ALL AGENTIC ASSISTANCE:**
@@ -193,11 +201,46 @@ All verified IP addresses, DNS mappings, ports, databases, and SSH credentials a
 | **Server Public IP** | `130.210.35.1` | `144.24.109.1` |
 | **SSH User** | `opc` | `opc` |
 | **SSH Private Key (Local)** | `~/.ssh/dse-erp-github-prod-ci` | `~/.ssh/dse-erp-github-uat` |
+| **Total Memory (RAM)** | **8 GB** (`6.7 GiB` usable, `4.0 GiB` Swap) | **4 GB** (`3.6 GiB` usable, `4.0 GiB` Swap) |
+| **Physical Block Volume** | **130 GB** (Expanded Boot Volume) | **70 GB** (Expanded Boot Volume) |
+| **Root Partition (`/`)** | **113 GB** XFS (`ocivolume-root`, ~94 GB free) | **53 GB** XFS (`ocivolume-root`, ~33 GB free) |
+| **Auxiliary Partitions** | `15 GB` (`/var/oled`), `2 GB` (`/boot`) | `15 GB` (`/var/oled`), `2 GB` (`/boot`) |
 | **Spring Server Port** | `8080` | `8081` |
 | **Target Database** | `dse_erp` (PostgreSQL 16+) | `dse_erp_uat` (PostgreSQL 16+) |
 | **Public Showcase Root** | `/srv/dse-erp/web/public` | `/srv/dse-erp/web/public` |
 | **Web ERP Root** | `/srv/dse-erp/web/admin` | `/srv/dse-erp/web/admin` |
 | **Web Server / SSL** | Caddy `/etc/caddy/Caddyfile` (Auto TLS, HTTP/3, Static `file_server` + `/api/*` reverse proxy) | Caddy `/etc/caddy/Caddyfile` (Auto TLS, HTTP/3, Static `file_server` + `/api/*` reverse proxy) |
+
+#### 2.2.1 Remote Server Health & Storage Inspection Commands
+Execute these 1-line commands from local terminal to verify memory, swap, and disk capacity:
+
+* **Windows (PowerShell):**
+  ```powershell
+  # Check Production (RAM & Disk)
+  ssh -i "$HOME/.ssh/dse-erp-github-prod-ci" opc@130.210.35.1 "free -h; echo '--- STORAGE ---'; df -h /"
+
+  # Check UAT (RAM & Disk)
+  ssh -i "$HOME/.ssh/dse-erp-github-uat" opc@144.24.109.1 "free -h; echo '--- STORAGE ---'; df -h /"
+  ```
+
+* **Mac / Linux (Terminal):**
+  *(Ensure `chmod 600 ~/.ssh/dse-erp-github-*` is set once)*
+  ```bash
+  # Check Production (RAM & Disk)
+  ssh -i ~/.ssh/dse-erp-github-prod-ci opc@130.210.35.1 "free -h; echo '--- STORAGE ---'; df -h /"
+
+  # Check UAT (RAM & Disk)
+  ssh -i ~/.ssh/dse-erp-github-uat opc@144.24.109.1 "free -h; echo '--- STORAGE ---'; df -h /"
+  ```
+
+* **OCI Disk Expansion Protocol (When boot volume is resized in OCI Console):**
+  ```bash
+  # 1. Rescan SCSI bus to detect new drive geometry
+  echo 1 | sudo tee /sys/class/block/sda/device/rescan
+
+  # 2. Automatically extend partition 3 and LVM XFS filesystem online
+  sudo /usr/libexec/oci-growfs -y
+  ```
 
 ---
 

@@ -3080,8 +3080,8 @@ window.BankStatementController = (function() {
       footerStatus.innerHTML = 'Please select or drag a bank statement file to inspect and validate.';
     }
 
-    await populateUniversalBankAccountDropdown();
     modal.style.display = 'flex';
+    await populateUniversalBankAccountDropdown();
   }
 
   function closeUniversalImportModal() {

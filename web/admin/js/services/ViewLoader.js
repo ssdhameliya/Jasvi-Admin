@@ -32,7 +32,7 @@ window.ViewLoader = (function() {
 
       // Asynchronously fetch dedicated view HTML file
       try {
-        const version = (window.DSE_VERSION && window.DSE_VERSION.webVersion) || (window.AppVersion && window.AppVersion.webVersion) || '11.0.22.01';
+        const version = (window.DSE_VERSION && window.DSE_VERSION.webVersion) || (window.AppVersion && window.AppVersion.webVersion) || '11.0.22.02';
         const res = await fetch(`./views/${cleanName}.html?v=${version}`);
         if (res.ok) {
           const html = await res.text();
@@ -67,6 +67,13 @@ window.ViewLoader = (function() {
           stage.appendChild(firstChild);
         }
         target = firstChild;
+
+        // Mount any sibling elements (e.g. modals or drawers outside the view root) so they are never lost
+        while (temp.children.length > 1) {
+          const sibling = temp.children[1];
+          if (stage) stage.appendChild(sibling);
+          else document.body.appendChild(sibling);
+        }
       } else {
         if (!target && stage) {
           target = document.createElement('div');

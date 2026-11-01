@@ -36,10 +36,11 @@ window.RegisterUiSupport = (function() {
   }
 
   function highlightRow(tableTbodyOrSelector, rowElement) {
+    if (!tableTbodyOrSelector || typeof tableTbodyOrSelector === 'function') return;
     const tbody = typeof tableTbodyOrSelector === 'string'
       ? document.querySelector(tableTbodyOrSelector)
       : tableTbodyOrSelector;
-    if (tbody) {
+    if (tbody && typeof tbody.querySelectorAll === 'function') {
       tbody.querySelectorAll('tr.active-selected-row').forEach(r => {
         if (r !== rowElement) r.classList.remove('active-selected-row');
       });
@@ -50,10 +51,11 @@ window.RegisterUiSupport = (function() {
   }
 
   function clearSelection(tableTbodyOrSelector) {
+    if (!tableTbodyOrSelector || typeof tableTbodyOrSelector === 'function') return;
     const tbody = typeof tableTbodyOrSelector === 'string'
       ? document.querySelector(tableTbodyOrSelector)
       : tableTbodyOrSelector;
-    if (tbody) {
+    if (tbody && typeof tbody.querySelectorAll === 'function') {
       tbody.querySelectorAll('tr.active-selected-row').forEach(r => r.classList.remove('active-selected-row'));
     }
   }
@@ -90,6 +92,11 @@ window.RegisterUiSupport = (function() {
   }
 
   function hideDrawer(drawerElOrId, tableTbodyOrSelector, onCloseCallback) {
+    if (typeof tableTbodyOrSelector === 'function') {
+      onCloseCallback = tableTbodyOrSelector;
+      tableTbodyOrSelector = null;
+    }
+
     const drawer = typeof drawerElOrId === 'string'
       ? document.getElementById(drawerElOrId)
       : drawerElOrId;
@@ -145,6 +152,10 @@ window.RegisterUiSupport = (function() {
   }
 
   function installEscapeClose(drawerElOrId, tableTbodyOrSelector, onCloseCallback) {
+    if (typeof tableTbodyOrSelector === 'function') {
+      onCloseCallback = tableTbodyOrSelector;
+      tableTbodyOrSelector = null;
+    }
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape' || event.key === 'Esc') {
         const drawer = typeof drawerElOrId === 'string'

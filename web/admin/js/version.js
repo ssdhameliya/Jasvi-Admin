@@ -3,18 +3,18 @@
  * Automatically synchronized with version.json and Desktop release revision.
  */
 window.AppVersion = window.DSE_VERSION = {
-  version: "11.0.22.01",
+  version: "11.0.22.02",
   desktopVersion: "11.0.22",
-  webBuild: 17,
-  webVersion: "11.0.22.01",
-  tag: "web-v11.0.22.01",
-  releaseDate: "2026-11-01T21:50:00+05:30",
+  webBuild: 18,
+  webVersion: "11.0.22.02",
+  tag: "web-v11.0.22.02",
+  releaseDate: "2026-11-01T22:25:00+05:30",
   environment: "Production / Enterprise",
-  summary: "v11.0.22.01 Enterprise Web Release: Universal 27 Reference Schemes, 8th Bank Statement Loader, 2-Way Deep Linkage & Modal Viewport Expansion",
+  summary: "v11.0.22.02 Enterprise Web Release: Fix RegisterUiSupport Escape Key Polymorphism & Bank Statement Import Modal Mounting",
   highlights: [
-    "1. Universal 27 Reference Scheme Authority: Standardized all 27 document, master, and lookup reference formats with 12 date/year schemes + NONE and global synchronization in Settings.",
-    "2. 8th Loader & Bank Statement Import Wizard: Added Bank Statement as the 8th Data Import Loader module with .xlsx/.xls/.csv template selector and color-coded preflight validation.",
-    "3. 2-Way Deep Linkage & Purchase Recon Modal Expansion: Full bidirectional linkage inspector across Bank Statements, Bank Entries, Sales, Purchases, Recon, and Vouchers with expanded modal viewports."
+    "1. Register UI Escape Key Polymorphism: Fixed unhandled TypeError on Escape key press when drawer close callbacks are passed to installEscapeClose.",
+    "2. Bank Statement Import Modal DOM Mounting: Fixed premature closing div in bank-statement.html and enhanced ViewLoader to safely mount sibling DOM elements.",
+    "3. Instant Modal Responsiveness: Optimized Bank Statement import dialog to display immediately on user click while background account lookups load."
   ]
 };
 
