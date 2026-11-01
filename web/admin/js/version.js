@@ -3,18 +3,18 @@
  * Automatically synchronized with version.json and Desktop release revision.
  */
 window.AppVersion = window.DSE_VERSION = {
-  version: "11.0.21.02",
-  desktopVersion: "11.0.21",
-  webBuild: 16,
-  webVersion: "11.0.21.02",
-  tag: "web-v11.0.21.02",
-  releaseDate: "2026-11-01T15:45:00+05:30",
+  version: "11.0.22.01",
+  desktopVersion: "11.0.22",
+  webBuild: 17,
+  webVersion: "11.0.22.01",
+  tag: "web-v11.0.22.01",
+  releaseDate: "2026-11-01T21:50:00+05:30",
   environment: "Production / Enterprise",
-  summary: "v11.0.21.02 Enterprise Web Release: Non-Intrusive Floating Toast Notifications & Jasvi Cyan / Slate Navy Theme Restoration",
+  summary: "v11.0.22.01 Enterprise Web Release: Universal 27 Reference Schemes, 8th Bank Statement Loader, 2-Way Deep Linkage & Modal Viewport Expansion",
   highlights: [
-    "1. Non-Intrusive Floating Toast System: Replaced blocking fuzzy modal popups on page refresh and routine events with lightweight floating top-right toast alerts that auto-dismiss smoothly in 3.2s.",
-    "2. Modal Dialog Isolation: Reserved full-screen modal dialogs exclusively for critical decisions (Delete, Discard Unsaved Changes, Void) and refined backdrop blur (14px -> 6px) to eliminate fuzzy text.",
-    "3. Jasvi Industrial Palette Restoration: Removed electric purple overrides across buttons, quick actions, tabs, table row actions, and secondary buttons, restoring the canonical Ocean Blue / Cyan gradient (#0284c7 / #38bdf8) and Slate Glass styling."
+    "1. Universal 27 Reference Scheme Authority: Standardized all 27 document, master, and lookup reference formats with 12 date/year schemes + NONE and global synchronization in Settings.",
+    "2. 8th Loader & Bank Statement Import Wizard: Added Bank Statement as the 8th Data Import Loader module with .xlsx/.xls/.csv template selector and color-coded preflight validation.",
+    "3. 2-Way Deep Linkage & Purchase Recon Modal Expansion: Full bidirectional linkage inspector across Bank Statements, Bank Entries, Sales, Purchases, Recon, and Vouchers with expanded modal viewports."
   ]
 };
 
