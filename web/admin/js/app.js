@@ -1192,6 +1192,7 @@ window.handleSendRegistrationOtp = async function(e) {
   const name = ((document.getElementById('reg-name') || {}).value || '').trim();
   const username = ((document.getElementById('reg-username') || {}).value || '').trim();
   const email = ((document.getElementById('reg-email') || {}).value || '').trim();
+  const phone = ((document.getElementById('reg-phone') || {}).value || '').trim();
   const role = currentRegistrationRoleCode || ((document.getElementById('reg-role') || {}).value || 'Sales').trim();
   const password = (document.getElementById('reg-password') || {}).value;
   const confirm = (document.getElementById('reg-confirm') || {}).value;
@@ -1199,10 +1200,20 @@ window.handleSendRegistrationOtp = async function(e) {
   const alertEl = document.getElementById('auth-alert');
   const btn = document.getElementById('btn-reg-send-otp') || document.getElementById('btn-reg-submit');
 
-  if (!name || !username || !email || !password || !confirm) {
+  if (!name || !username || !email || !phone || !password || !confirm) {
     if (alertEl) {
       alertEl.className = 'auth-alert error';
       alertEl.innerText = 'Please complete all required fields.';
+      alertEl.style.display = 'block';
+    }
+    return;
+  }
+
+  const phoneDigits = phone.replace(/[^0-9]/g, '');
+  if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+    if (alertEl) {
+      alertEl.className = 'auth-alert error';
+      alertEl.innerText = 'Please enter a valid 10-digit mobile number.';
       alertEl.style.display = 'block';
     }
     return;
@@ -1243,11 +1254,12 @@ window.handleSendRegistrationOtp = async function(e) {
   if (alertEl) alertEl.style.display = 'none';
 
   try {
-    currentRegistrationPending = { username, fullName: name, email, role, password };
+    currentRegistrationPending = { username, fullName: name, email, phone, role, password };
     const payload = {
       username,
       fullName: name,
       email,
+      phone,
       role,
       mfaEnabled: true,
       captchaChallengeId: currentRegistrationCaptchaId,
@@ -1330,6 +1342,7 @@ window.handleVerifyRegistrationEmail = async function() {
       password: currentRegistrationPending.password,
       fullName: currentRegistrationPending.fullName,
       email: currentRegistrationPending.email,
+      phone: currentRegistrationPending.phone || '',
       role: currentRegistrationPending.role,
       mfaEnabled: true
     };

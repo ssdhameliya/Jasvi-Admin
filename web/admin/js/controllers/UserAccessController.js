@@ -293,9 +293,10 @@ window.UserAccessController = (function() {
           const name = (u.fullName || '').toLowerCase();
           const uname = (u.username || '').toLowerCase();
           const email = (u.email || '').toLowerCase();
+          const phone = (u.phone || '').toLowerCase();
           const dept = (u.department || '').toLowerCase();
           const br = (u.branch || '').toLowerCase();
-          if (!name.includes(q) && !uname.includes(q) && !email.includes(q) && !dept.includes(q) && !br.includes(q)) {
+          if (!name.includes(q) && !uname.includes(q) && !email.includes(q) && !phone.includes(q) && !dept.includes(q) && !br.includes(q)) {
             return false;
           }
         }
@@ -327,7 +328,7 @@ window.UserAccessController = (function() {
       if (!tbody) return;
 
       if (!usersList || usersList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 24px; color: var(--text-dim);">No user accounts match current criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 24px; color: var(--text-dim);">No user accounts match current criteria.</td></tr>`;
         return;
       }
 
@@ -353,6 +354,9 @@ window.UserAccessController = (function() {
             <td>
               <div style="font-size: 0.8rem; color: var(--text-muted);">${u.email || '-'}</div>
               <div style="font-size: 0.75rem; color: var(--cyan); font-family: monospace;">@${u.username || '-'}</div>
+            </td>
+            <td>
+              <div style="font-size: 0.82rem; font-weight: 600; color: var(--text-main); font-family: monospace;">${u.phone || '-'}</div>
             </td>
             <td>${roleBadge}</td>
             <td style="font-size: 0.8rem; color: var(--text-main);">${u.department || 'GENERAL'}</td>
@@ -415,6 +419,7 @@ window.UserAccessController = (function() {
       setEl('ud-dept', u.department || 'GENERAL');
       setEl('ud-branch', u.branch || 'HEADQUARTERS');
       setEl('ud-email', u.email || '-');
+      setEl('ud-phone', u.phone || '-');
       setEl('ud-last-login', u.lastLogin ? window.FormatUtil.formatDateTime(u.lastLogin) : 'Never logged in');
 
       if (window.RegisterUiSupport) {
@@ -681,6 +686,8 @@ window.UserAccessController = (function() {
       unameEl.disabled = false;
       document.getElementById('user-form-fullname').value = '';
       document.getElementById('user-form-email').value = '';
+      const phoneInput = document.getElementById('user-form-phone');
+      if (phoneInput) phoneInput.value = '';
       document.getElementById('user-form-dept').value = '';
       document.getElementById('user-form-branch').value = '';
       document.getElementById('user-form-access').value = 'STANDARD';
@@ -727,6 +734,8 @@ window.UserAccessController = (function() {
 
       document.getElementById('user-form-fullname').value = u.fullName || '';
       document.getElementById('user-form-email').value = u.email || '';
+      const phoneInputEdit = document.getElementById('user-form-phone');
+      if (phoneInputEdit) phoneInputEdit.value = u.phone || '';
       document.getElementById('user-form-role').value = u.role || 'STAFF';
       document.getElementById('user-form-dept').value = u.department || '';
       document.getElementById('user-form-branch').value = u.branch || '';
@@ -777,6 +786,7 @@ window.UserAccessController = (function() {
       const username = document.getElementById('user-form-username').value.trim();
       const fullName = document.getElementById('user-form-fullname').value.trim();
       const email = document.getElementById('user-form-email').value.trim();
+      const phone = (document.getElementById('user-form-phone') || {}).value ? document.getElementById('user-form-phone').value.trim() : '';
       const role = document.getElementById('user-form-role').value;
       const department = document.getElementById('user-form-dept').value.trim();
       const branch = document.getElementById('user-form-branch').value.trim();
@@ -798,6 +808,17 @@ window.UserAccessController = (function() {
       if (!email || !email.includes('@')) {
         window.AppDialogService.showToast('Valid Email Address is required.', 'error');
         return;
+      }
+      if (!editingUserId && !phone) {
+        window.AppDialogService.showToast('Phone number is required for new accounts.', 'error');
+        return;
+      }
+      if (phone) {
+        const phoneDigits = phone.replace(/[^0-9]/g, '');
+        if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+          window.AppDialogService.showToast('Enter a valid 10-digit mobile number.', 'error');
+          return;
+        }
       }
       if (!role) {
         window.AppDialogService.showToast('Role is required.', 'error');
@@ -824,6 +845,7 @@ window.UserAccessController = (function() {
             username,
             fullName,
             email,
+            phone,
             role,
             department: department || 'GENERAL',
             branch: branch || 'HEADQUARTERS',
@@ -843,6 +865,7 @@ window.UserAccessController = (function() {
             username,
             fullName,
             email,
+            phone,
             role,
             department: department || 'GENERAL',
             branch: branch || 'HEADQUARTERS',
