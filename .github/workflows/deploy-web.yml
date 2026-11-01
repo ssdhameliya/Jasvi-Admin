@@ -123,9 +123,7 @@ jobs:
     needs: deploy-uat
     runs-on: ubuntu-latest
     if: |
-      github.ref == 'refs/heads/main' ||
-      startsWith(github.ref, 'refs/tags/') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'uat-then-prod')
+      github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'uat-then-prod'
     timeout-minutes: 10
     steps:
       - name: Checkout Repository
