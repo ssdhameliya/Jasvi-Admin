@@ -45,6 +45,10 @@
               onclick="window.SettingsController.switchSection('EMAIL')">
               <span>&#9993;&#65039;</span> Email Delivery
             </button>
+            <button type="button" class="settings-tab-btn" data-section="WHATSAPP"
+              onclick="window.SettingsController.switchSection('WHATSAPP')">
+              <span>&#128172;</span> WhatsApp (WAHA)
+            </button>
             <button type="button" class="settings-tab-btn" data-section="SECURITY"
               onclick="window.SettingsController.switchSection('SECURITY')">
               <span>&#128274;</span> Security &amp; Session
@@ -1103,6 +1107,131 @@ Outstanding Balance: {BalanceAmount}
               </div>
             </div>
 
+            <!-- 6. WHATSAPP (WAHA) PANEL -->
+            <div id="settings-panel-whatsapp" class="settings-subpanel" data-section="WHATSAPP" style="display:none;">
+              <div class="data-panel"
+                style="padding:22px 24px; margin-bottom:18px; background:rgba(30,41,59,0.45); border:1px solid rgba(255,255,255,0.08); border-radius:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:12px;">
+                  <div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                      <span style="color:#25d366; font-size:1.2rem;">&#128172;</span>
+                      <h2 style="font-size:1.05rem; font-weight:700; color:#ffffff; margin:0; font-family:'Space Grotesk',sans-serif;">
+                        WhatsApp Service (WAHA Docker Integration)
+                      </h2>
+                      <span id="waha-connection-badge" class="badge" style="background:rgba(100,116,139,0.3); color:#94a3b8; font-size:0.75rem; padding:3px 10px; border-radius:20px;">
+                        ⚪ Disconnected
+                      </span>
+                    </div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">
+                      Direct automated background dispatch of invoices, quotations, receipts and payment reminders via WAHA HTTP API
+                    </div>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.SettingsController.testWhatsappConnection()"
+                      style="display:flex; align-items:center; gap:6px; font-size:0.75rem; padding:6px 14px; background:rgba(37,211,102,0.12); border-color:rgba(37,211,102,0.3); color:#25d366; font-weight:600;">
+                      <span>&#128260;</span> Test Connection
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.SettingsController.showWahaDockerGuidanceModal()"
+                      style="display:flex; align-items:center; gap:6px; font-size:0.75rem; padding:6px 14px; background:rgba(56,189,248,0.12); border-color:rgba(56,189,248,0.3); color:#38bdf8;">
+                      <span>&#9432;</span> Docker Run Guide
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Sub-section 1: WAHA Server Configuration -->
+                <div style="background:rgba(15,23,42,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:18px 20px; margin-bottom:18px;">
+                  <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px;">
+                    <span style="color:#38bdf8; font-size:1.05rem;">&#128187;</span>
+                    <h3 style="font-size:0.92rem; font-weight:700; color:#ffffff; margin:0; font-family:'Space Grotesk',sans-serif;">
+                      WAHA Server Endpoint &amp; Security
+                    </h3>
+                  </div>
+
+                  <div style="display:grid; grid-template-columns: 2fr 2fr 1fr; gap:16px; margin-bottom:14px; align-items:flex-end;">
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label class="form-label" style="font-size:0.74rem; font-weight:600; color:#94a3b8;">
+                        WAHA API Server URL (Oracle Cloud / Local Docker)
+                      </label>
+                      <input type="text" id="waha-endpoint" class="form-input"
+                        style="height:38px; background:rgba(15,23,42,0.6); border-color:rgba(255,255,255,0.1); color:#ffffff; font-size:0.82rem;"
+                        placeholder="http://localhost:3000 or http://your-oracle-server-ip:3000" value="http://localhost:3000">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                      <label class="form-label" style="font-size:0.74rem; font-weight:600; color:#94a3b8;">
+                        WAHA API Key (Header: X-Api-Key)
+                      </label>
+                      <input type="password" id="waha-api-key" class="form-input"
+                        style="height:38px; background:rgba(15,23,42,0.6); border-color:rgba(255,255,255,0.1); color:#ffffff; font-size:0.82rem;"
+                        placeholder="Leave blank if no API key is configured">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0; display:flex; flex-direction:column; justify-content:center;">
+                      <label class="form-label" style="font-size:0.74rem; font-weight:600; color:#94a3b8; margin-bottom:8px;">
+                        Integration Status
+                      </label>
+                      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="waha-enabled" checked style="accent-color:#25d366; width:16px; height:16px;">
+                        <span style="font-size:0.8rem; color:#f8fafc; font-weight:600;">Enable WhatsApp</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sub-section 2: Configured Sender Channels & Phone Numbers -->
+                <div style="background:rgba(15,23,42,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:18px 20px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                    <div>
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="color:#25d366; font-size:1.05rem;">&#128242;</span>
+                        <h3 style="font-size:0.92rem; font-weight:700; color:#ffffff; margin:0; font-family:'Space Grotesk',sans-serif;">
+                          Sender Numbers &amp; Multi-Session Channels
+                        </h3>
+                      </div>
+                      <div style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">
+                        Configure company WhatsApp numbers. Click "Scan QR" to link your physical WhatsApp phone to WAHA.
+                      </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:0.74rem; color:#94a3b8; font-weight:600;">Default Sender:</span>
+                        <select id="waha-default-channel" class="form-select" onchange="window.SettingsController.onDefaultChannelSelected()"
+                          style="height:34px; padding:0 10px; font-size:0.78rem; background:rgba(15,23,42,0.7); border-color:rgba(255,255,255,0.15); color:#ffffff; border-radius:6px;">
+                          <option value="">(Loading channels...)</option>
+                        </select>
+                      </div>
+                      <button type="button" class="btn btn-primary btn-sm" onclick="window.SettingsController.showAddWhatsappChannelModal()"
+                        style="display:flex; align-items:center; gap:6px; font-size:0.74rem; padding:6px 14px; background:#25d366; border-color:#22c55e; color:#0f172a; font-weight:700;">
+                        <span>+</span> Add Number / Channel
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Channels Table -->
+                  <div style="overflow-x:auto;">
+                    <table class="data-table" style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                      <thead>
+                        <tr style="border-bottom:1px solid rgba(255,255,255,0.1); text-align:left; color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">
+                          <th style="padding:10px 12px; width:60px;">Default</th>
+                          <th style="padding:10px 12px;">Display Name</th>
+                          <th style="padding:10px 12px;">Phone Number</th>
+                          <th style="padding:10px 12px;">WAHA Session</th>
+                          <th style="padding:10px 12px;">Pairing Status</th>
+                          <th style="padding:10px 12px; text-align:right;">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="waha-channels-tbody">
+                        <tr>
+                          <td colspan="6" style="padding:20px; text-align:center; color:#64748b;">
+                            Loading sender channels...
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
             <!-- 6. SECURITY PANEL (SecuritySettingsPanel.fxml Parity) -->
             <div id="settings-panel-security" class="settings-subpanel" data-section="SECURITY" style="display:none;">
               <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)); gap:16px;">
@@ -1504,5 +1633,108 @@ Outstanding Balance: {BalanceAmount}
             </div>
 
           </div>
+          <!-- MODAL: ADD WHATSAPP SENDER CHANNEL -->
+  <div id="modal-add-whatsapp-channel" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); justify-content:center; align-items:center; padding:16px;">
+    <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:12px; width:100%; max-width:480px; box-shadow:0 20px 40px rgba(0,0,0,0.5); overflow:hidden;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.6);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="color:#25d366; font-size:1.15rem;">&#128242;</span>
+          <h3 style="margin:0; font-size:0.95rem; font-weight:700; color:#ffffff;">Add WhatsApp Sender Number</h3>
         </div>
+        <button type="button" onclick="window.SettingsController.closeAddWhatsappChannelModal()" style="background:none; border:none; color:#94a3b8; font-size:1.2rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="padding:20px;">
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600; color:#94a3b8;">Display Name *</label>
+          <input type="text" id="waha-new-display-name" class="form-input" style="height:38px; font-size:0.82rem;" placeholder="e.g. Sales Department or Accounts Mobile">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600; color:#94a3b8;">Phone Number (with Country Code) *</label>
+          <input type="text" id="waha-new-phone" class="form-input" style="height:38px; font-size:0.82rem;" placeholder="e.g. 919876543210">
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label" style="font-size:0.75rem; font-weight:600; color:#94a3b8;">WAHA Session Identifier *</label>
+          <input type="text" id="waha-new-session" class="form-input" style="height:38px; font-size:0.82rem;" value="default" placeholder="default or session name">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="waha-new-default" style="accent-color:#25d366; width:16px; height:16px;">
+            <span style="font-size:0.78rem; color:#f8fafc;">Set as Primary Default Sender</span>
+          </label>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; padding:14px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.4);">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.SettingsController.closeAddWhatsappChannelModal()" style="font-size:0.78rem; padding:6px 14px;">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="window.SettingsController.submitAddWhatsappChannel()" style="background:#25d366; border-color:#22c55e; color:#0f172a; font-weight:700; font-size:0.78rem; padding:6px 16px;">Save Channel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: WAHA QR CODE SCANNING -->
+  <div id="modal-waha-qr-code" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); justify-content:center; align-items:center; padding:16px;">
+    <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.15); border-radius:14px; width:100%; max-width:440px; box-shadow:0 24px 48px rgba(0,0,0,0.6); overflow:hidden; text-align:center;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.6);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="color:#25d366; font-size:1.2rem;">&#128242;</span>
+          <h3 style="margin:0; font-size:0.95rem; font-weight:700; color:#ffffff;">Link WhatsApp Device</h3>
+        </div>
+        <button type="button" onclick="window.SettingsController.closeWhatsappQrModal()" style="background:none; border:none; color:#94a3b8; font-size:1.3rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="padding:24px 20px;">
+        <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:16px; line-height:1.5; text-align:left; background:rgba(15,23,42,0.5); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+          1. Open <strong>WhatsApp</strong> on your phone<br>
+          2. Tap <strong>Menu / Settings &#8942;</strong> &rarr; <strong>Linked Devices</strong><br>
+          3. Tap <strong>Link a Device</strong> and point phone camera to this screen
+        </div>
+
+        <div id="waha-qr-container" style="background:#ffffff; padding:16px; border-radius:12px; display:inline-block; margin-bottom:14px; min-width:240px; min-height:240px; box-shadow:0 4px 16px rgba(0,0,0,0.3);">
+          <div id="waha-qr-loading" style="padding:80px 20px; color:#64748b; font-size:0.8rem; display:flex; flex-direction:column; align-items:center; gap:10px;">
+            <div style="width:28px; height:28px; border:3px solid #cbd5e1; border-top-color:#25d366; border-radius:50%; animation:spin 1s linear infinite;"></div>
+            <span>Fetching QR code from WAHA...</span>
+          </div>
+          <img id="waha-qr-img" src="" alt="WhatsApp QR Code" style="display:none; width:220px; height:220px; image-rendering:pixelated;">
+        </div>
+
+        <div id="waha-qr-status" style="font-size:0.75rem; color:#94a3b8; margin-bottom:10px;">
+          Waiting for QR scan...
+        </div>
+      </div>
+      <div style="display:flex; justify-content:center; gap:12px; padding:14px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.4);">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.SettingsController.refreshWhatsappQr()" style="font-size:0.78rem; padding:6px 16px;">
+          <span>&#128260;</span> Refresh QR
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.SettingsController.closeWhatsappQrModal()" style="font-size:0.78rem; padding:6px 16px;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: WAHA DOCKER GUIDANCE -->
+  <div id="modal-waha-docker-guide" class="modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.8); backdrop-filter:blur(6px); justify-content:center; align-items:center; padding:16px;">
+    <div style="background:#1e293b; border:1px solid rgba(255,255,255,0.15); border-radius:14px; width:100%; max-width:640px; box-shadow:0 24px 48px rgba(0,0,0,0.6); overflow:hidden;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.6);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="color:#38bdf8; font-size:1.2rem;">&#128011;</span>
+          <h3 style="margin:0; font-size:0.95rem; font-weight:700; color:#ffffff;">WAHA Docker Installation on Oracle Linux</h3>
+        </div>
+        <button type="button" onclick="window.SettingsController.closeWahaDockerGuidanceModal()" style="background:none; border:none; color:#94a3b8; font-size:1.3rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="padding:20px; max-height:75vh; overflow-y:auto; font-size:0.8rem; color:#cbd5e1; line-height:1.6;">
+        <p style="margin-top:0;">To run WhatsApp HTTP API (WAHA) on your Oracle Cloud server, execute this single Docker command in your SSH terminal:</p>
+        <pre style="background:#0f172a; padding:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); color:#38bdf8; font-family:monospace; font-size:0.75rem; overflow-x:auto; user-select:all;">docker run -d --name waha --restart unless-stopped   -p 3000:3000   -e WAHA_API_KEY=""   -v /opt/waha/.sessions:/app/.sessions   devlikeapro/waha</pre>
+        <div style="margin-top:14px; background:rgba(56,189,248,0.08); border-left:3px solid #38bdf8; padding:10px 14px; border-radius:0 6px 6px 0;">
+          <strong>Firewall / Ingress Rule:</strong> Ensure port <code>3000</code> is open in Oracle Cloud VCN Security Lists / firewalld, or proxy it through Nginx/Caddy with SSL.
+        </div>
+        <div style="margin-top:12px; background:rgba(37,211,102,0.08); border-left:3px solid #25d366; padding:10px 14px; border-radius:0 6px 6px 0;">
+          <strong>Session Persistence:</strong> The <code>/opt/waha/.sessions</code> volume mount keeps your paired WhatsApp login active across server reboots.
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end; padding:12px 20px; border-top:1px solid rgba(255,255,255,0.08); background:rgba(15,23,42,0.4);">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.SettingsController.closeWahaDockerGuidanceModal()" style="font-size:0.78rem; padding:6px 16px;">Got It</button>
+      </div>
+    </div>
+  </div>
+
+</div>
 

@@ -513,6 +513,7 @@ window.SettingsController = (function() {
           INVOICE: 'Invoice',
           NOTIFICATIONS: 'Notifications',
           EMAIL: 'Email',
+          WHATSAPP: 'WhatsApp',
           SECURITY: 'Security',
           MODULES: 'Modules',
           SHOWCASE: '3D Showcase'
@@ -536,6 +537,10 @@ window.SettingsController = (function() {
           break;
         case 'EMAIL':
           this.loadEmailSettings();
+          break;
+        case 'WHATSAPP':
+          this.loadWhatsappSettings();
+          this.loadWhatsappChannels();
           break;
         case 'SECURITY':
           this.loadSecuritySettings();
@@ -568,6 +573,9 @@ window.SettingsController = (function() {
           break;
         case 'EMAIL':
           await this.saveEmailSettings();
+          break;
+        case 'WHATSAPP':
+          await this.saveWhatsappSettings();
           break;
         case 'SECURITY':
           await this.saveSecuritySettings();

@@ -1223,9 +1223,34 @@ window.QuotationController = (function () {
     const clean = mobile.replace(/\D/g, '');
     const num = clean.length === 10 ? '91' + clean : clean;
     const msg = encodeURIComponent(`Hello, please find your Quotation ${no} from Jasvi Industries.\n\nDownload: https://erp-uat.jasviindustries.in/api/documents/render?type=QUOTATION&number=${no}&format=PDF`);
-    window.OperationsService.markQuotationSent(id, 'WHATSAPP', 0);
-    window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
-    loadQuotations(currentPage);
+    try {
+      if (window.AppDialogService && typeof window.AppDialogService.showToast === 'function') {
+        window.AppDialogService.showToast(`Dispatching Quotation ${no} via WhatsApp...`, 'info');
+      }
+      const res = await window.ApiService.post('/api/authority/whatsapp/send-document', {
+        documentType: 'QUOTATION',
+        documentNumber: no,
+        documentId: id,
+        recipientPhone: num,
+        customMessage: `Hello, please find your Quotation ${no} attached from Jasvi Industries.`
+      });
+
+      if (res && res.success) {
+        if (window.AppDialogService && typeof window.AppDialogService.showToast === 'function') {
+          window.AppDialogService.showToast(`Quotation ${no} PDF sent directly via WhatsApp!`, 'success');
+        }
+        loadQuotations(currentPage);
+        return;
+      }
+
+      window.OperationsService.markQuotationSent(id, 'WHATSAPP', 0);
+      window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
+      loadQuotations(currentPage);
+    } catch (err) {
+      window.OperationsService.markQuotationSent(id, 'WHATSAPP', 0);
+      window.open(`https://wa.me/${num}?text=${msg}`, '_blank');
+      loadQuotations(currentPage);
+    }
   }
 
   function openFollowUpModal(id, no, currentFollowUp, rowVersion, isConverted = false) {

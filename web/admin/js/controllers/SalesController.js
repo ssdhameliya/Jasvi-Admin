@@ -3364,23 +3364,33 @@ window.SalesController = {
     msg += `Regards,\n*Jasvi Industries*`;
 
     try {
-      if (sale.id) {
-        await window.OperationsService.markDocumentWhatsapp('SALE', sale.id, sale.rowVersion || 0);
-        await window.OperationsService.recordCommunication({
-          entityType: 'SALE',
-          entityId: sale.id,
-          channel: 'WHATSAPP',
-          recipient: phone,
-          subject: `Invoice ${invoiceNo}`,
-          status: 'SENT'
-        });
+      window.AppDialogService.showToast(`Dispatching Invoice ${invoiceNo} via WhatsApp...`, 'info');
+      const res = await window.ApiService.post('/api/authority/whatsapp/send-document', {
+        documentType: 'SALES_INVOICE',
+        documentNumber: invoiceNo,
+        documentId: sale.id || 0,
+        recipientPhone: phone,
+        customMessage: msg,
+        rowVersion: sale.rowVersion || 0
+      });
+
+      if (res && res.success) {
+        window.AppDialogService.showToast(`Invoice ${invoiceNo} PDF sent directly via WhatsApp to ${partyName}!`, 'success');
+        await this.loadSales();
+        return;
       }
 
+      console.warn('[SalesController] WAHA returned failure or disabled:', res);
+      window.AppDialogService.showToast(`Direct WhatsApp offline (${res ? res.message : 'fallback'}). Opening WhatsApp Web...`, 'warning');
       window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
-      window.AppDialogService.showToast(`Opening WhatsApp for ${partyName} (+${phone})...`, 'info');
+      if (sale.id) {
+        await window.OperationsService.markDocumentWhatsapp('SALE', sale.id, sale.rowVersion || 0);
+      }
       await this.loadSales();
     } catch (err) {
+      console.warn('[SalesController] WAHA dispatch error, falling back to wa.me:', err);
       window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+      window.AppDialogService.showToast(`Opening WhatsApp for ${partyName} (+${phone})...`, 'info');
     }
   },
 
