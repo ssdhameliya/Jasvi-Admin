@@ -734,20 +734,83 @@ window.AppDialogService = (function() {
     },
 
     /**
-     * Global Decision Dialog Notification Dispatcher
-     * Replaces transient toast popups with interactive modal dialogs as mandated.
+     * Non-intrusive floating toast notification stack (Top-Right)
+     * Auto-dismisses, non-blocking, preserves uninterrupted user workflow.
      */
-    showToast(message, type = 'info') {
+    showToast(message, type = 'info', duration = 3200) {
       const msgStr = typeof message === 'string' ? message : (message ? (message.message || JSON.stringify(message)) : '');
-      if (type === 'success') {
-        return this.success('Success', 'Operation Completed', msgStr);
-      } else if (type === 'error') {
-        return this.error('Error', 'Action Failed', msgStr);
-      } else if (type === 'warning') {
-        return this.warning('Warning', 'Notice', msgStr);
-      } else {
-        return this.info('Information', 'System Notice', msgStr);
+      if (!msgStr) return null;
+
+      let toastContainer = document.getElementById('app-toast-container');
+      if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'app-toast-container';
+        toastContainer.className = 'app-toast-container';
+        document.body.appendChild(toastContainer);
       }
+
+      const toast = document.createElement('div');
+      const normalizedType = ['success', 'error', 'warning', 'info'].includes(type) ? type : 'info';
+      toast.className = `app-toast-card toast-${normalizedType}`;
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+
+      const iconMap = {
+        success: '\u2713',
+        error: '\u2715',
+        warning: '\u26A0',
+        info: '\u2139'
+      };
+
+      const iconEl = document.createElement('div');
+      iconEl.className = 'app-toast-icon';
+      iconEl.textContent = iconMap[normalizedType] || 'ℹ';
+
+      const textEl = document.createElement('div');
+      textEl.className = 'app-toast-message';
+      textEl.textContent = msgStr;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'app-toast-close';
+      closeBtn.innerHTML = '&times;';
+      closeBtn.setAttribute('aria-label', 'Close notification');
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        dismissToast(toast);
+      };
+
+      toast.appendChild(iconEl);
+      toast.appendChild(textEl);
+      toast.appendChild(closeBtn);
+
+      toast.onclick = () => dismissToast(toast);
+
+      toastContainer.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.add('toast-visible');
+      });
+
+      function dismissToast(el) {
+        if (!el || el._dismissed) return;
+        el._dismissed = true;
+        el.classList.remove('toast-visible');
+        el.classList.add('toast-leaving');
+        setTimeout(() => {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        }, 220);
+      }
+
+      const timer = setTimeout(() => {
+        dismissToast(toast);
+      }, duration);
+
+      toast.onmouseenter = () => clearTimeout(timer);
+      toast.onmouseleave = () => {
+        setTimeout(() => dismissToast(toast), 1200);
+      };
+
+      return toast;
     },
 
     toast(message, type = 'info') {
