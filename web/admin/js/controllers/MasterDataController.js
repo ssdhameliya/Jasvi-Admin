@@ -145,6 +145,8 @@ window.MasterDataController = (function() {
 
       const titleEl = document.getElementById('masters-selected-title');
       if (titleEl) titleEl.innerText = `${catName} Lookups`;
+      const syncBtn = document.getElementById('btn-master-sync-ref-formats');
+      if (syncBtn) syncBtn.style.display = (catName || '').toUpperCase() === 'REFERENCE_FORMAT' ? 'inline-flex' : 'none';
 
       const tbody = document.getElementById('masters-table-tbody');
       if (tbody && (!tbody.children.length || tbody.querySelector('.spinner') || tbody.innerText.includes('Loading'))) {
@@ -842,6 +844,97 @@ window.MasterDataController = (function() {
         return this.selectCategory(currentCategory);
       } else {
         return this.loadMastersData();
+      }
+    },
+
+    openSyncAllRefFormatsModal() {
+      const modal = document.getElementById('modal-sync-ref-formats');
+      if (modal) {
+        modal.style.display = 'flex';
+        this.updateSyncPreview();
+      }
+    },
+
+    closeSyncAllRefFormatsModal() {
+      const modal = document.getElementById('modal-sync-ref-formats');
+      if (modal) modal.style.display = 'none';
+    },
+
+    updateSyncPreview() {
+      const patEl = document.getElementById('m-sync-ref-pattern');
+      const delimEl = document.getElementById('m-sync-ref-delimiter');
+      const seqEl = document.getElementById('m-sync-ref-seq-width');
+      if (!patEl) return;
+
+      const pattern = patEl.value || 'DD-MM-YYYY';
+      const delim = delimEl ? delimEl.value : '/';
+      const seqLen = parseInt(seqEl ? seqEl.value : '4', 10) || 4;
+      const seqMask = 'X'.repeat(seqLen);
+
+      const buildFmt = (prefix) => {
+        if (pattern === 'NONE') {
+          return `${prefix}${delim}${seqMask}`;
+        }
+        return `${prefix}${delim}${pattern}${delim}${seqMask}`;
+      };
+
+      const now = new Date();
+      const formatFn = (prefix) => {
+        const rawFmt = buildFmt(prefix);
+        return (window.FormatUtil && typeof window.FormatUtil.formatDatedReference === 'function')
+          ? window.FormatUtil.formatDatedReference(rawFmt, 1, now)
+          : rawFmt.replace(seqMask, '1'.padStart(seqLen, '0'));
+      };
+
+      const setPrev = (id, prefix) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = formatFn(prefix);
+      };
+
+      setPrev('sync-preview-sales', 'IN');
+      setPrev('sync-preview-purchase', 'PUR');
+      setPrev('sync-preview-customer', 'CUS');
+      setPrev('sync-preview-supplier', 'SUP');
+      setPrev('sync-preview-item', 'ITM');
+      setPrev('sync-preview-journal', 'JV');
+    },
+
+    async submitSyncAllRefFormats() {
+      const patEl = document.getElementById('m-sync-ref-pattern');
+      const delimEl = document.getElementById('m-sync-ref-delimiter');
+      const seqEl = document.getElementById('m-sync-ref-seq-width');
+      if (!patEl) return;
+
+      const pattern = patEl.value || 'DD-MM-YYYY';
+      const delim = delimEl ? delimEl.value : '/';
+      const seqLen = parseInt(seqEl ? seqEl.value : '4', 10) || 4;
+
+      const confirmMsg = `Are you sure you want to standardize all document reference formats?\n\nPattern: ${pattern}\nDelimiter: ${delim}\nSequence: ${seqLen} digits\n\nThis will synchronize Sales, Purchases, Customers, Suppliers, Items, Quotations, Returns, Payments, and Journal Vouchers.`;
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        await window.MasterService.syncAllReferenceFormats(pattern, delim, seqLen);
+        this.closeSyncAllRefFormatsModal();
+        if (window.AudioSynthesizer && typeof window.AudioSynthesizer.playSuccess === 'function') {
+          window.AudioSynthesizer.playSuccess();
+        }
+        if (window.AppDialogService && typeof window.AppDialogService.toastSuccess === 'function') {
+          window.AppDialogService.toastSuccess('All document reference formats synchronized successfully!');
+        } else if (window.AppDialogService && typeof window.AppDialogService.showToast === 'function') {
+          window.AppDialogService.showToast('All document reference formats synchronized successfully!', 'success');
+        } else {
+          alert('All document reference formats synchronized successfully!');
+        }
+        await this.loadCategoryLookups('REFERENCE_FORMAT');
+      } catch (err) {
+        console.error('Failed to sync reference formats:', err);
+        if (window.AppDialogService && typeof window.AppDialogService.toastError === 'function') {
+          window.AppDialogService.toastError(`Failed to sync reference formats: ${err.message}`);
+        } else if (window.AppDialogService && typeof window.AppDialogService.showToast === 'function') {
+          window.AppDialogService.showToast(`Failed to sync reference formats: ${err.message}`, 'error');
+        } else {
+          alert(`Failed to sync reference formats: ${err.message}`);
+        }
       }
     },
 

@@ -36,7 +36,8 @@ window.ImportService = (function() {
     'invoice_no', 'invoice_date', 'party_code', 'item_code', 'quantity', 'rate', 'gst_percent', 'gst_type',
     'payment_terms', 'paid_amount', 'remarks',
     'charge_1_type', 'charge_1_amount', 'charge_1_taxable', 'charge_1_gst_percent',
-    'charge_2_type', 'charge_2_amount', 'charge_2_taxable', 'charge_2_gst_percent', 'attachment_file'
+    'charge_2_type', 'charge_2_amount', 'charge_2_taxable', 'charge_2_gst_percent',
+    'additional_charges', 'attachment_file', 'attachment_files'
   ];
   const MASTER_FIELDS = [
     'category_code', 'category_name', 'category_description', 'value_code', 'value', 'value_description', 'display_order', 'is_active'
@@ -133,26 +134,41 @@ window.ImportService = (function() {
 
   function getExampleRows(module) {
     const today = new Date().toISOString().substring(0, 10);
+    const d = new Date();
+    const getSampleId = (code, fallback, seq) => {
+      let fmt = fallback;
+      try {
+        if (window.MasterService && window.MasterService._cachedReferenceFormats && window.MasterService._cachedReferenceFormats[code]) {
+          fmt = window.MasterService._cachedReferenceFormats[code];
+        } else if (localStorage.getItem('dse_ref_format_' + code)) {
+          fmt = localStorage.getItem('dse_ref_format_' + code);
+        }
+      } catch (_) {}
+      return (window.FormatUtil && typeof window.FormatUtil.formatDatedReference === 'function')
+        ? window.FormatUtil.formatDatedReference(fmt, seq, d)
+        : (fallback.replace('XXXX', String(seq).padStart(4, '0')));
+    };
+
     switch (module) {
       case 'Customers/CRM':
       case 'Customers / CRM':
         return [
-          ['CUS-0001', 'ABC Enterprises', 'Ravi Patel', '9876543210', 'accounts@example.com', '24AAAAA1111A1Z5', 'Ahmedabad, Gujarat', '0', 'true']
+          [getSampleId('REF_CUSTOMER', 'CUSXXX', 1), 'ABC Enterprises', 'Ravi Patel', '9876543210', 'accounts@example.com', '24AAAAA1111A1Z5', 'Ahmedabad, Gujarat', '0', 'true']
         ];
       case 'Suppliers/HRM':
       case 'Suppliers / HRM':
         return [
-          ['SUP-0001', 'Steel Supplier Ltd', 'Amit Shah', '9876500000', 'sales@supplier.example', '24BBBBB2222B1Z4', 'Rajkot, Gujarat', '0', 'true']
+          [getSampleId('REF_SUPPLIER', 'SUPXXX', 1), 'Steel Supplier Ltd', 'Amit Shah', '9876500000', 'sales@supplier.example', '24BBBBB2222B1Z4', 'Rajkot, Gujarat', '0', 'true']
         ];
       case 'Sales':
         return [
-          ['SAL-GST-0001', today, 'CUS-0001', 'ITEM-0001', '2', '1500', '18', 'GST', '15 Days', '0', 'Sample intra-state sale with two optional charges', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', ''],
-          ['SAL-IGST-0002', today, 'CUS-0002', 'ITEM-0001', '1', '2000', '18', 'IGST', '15 Days', '0', 'Sample inter-state sale; attachment is optional', '', '', '', '', '', '', '', '', '']
+          [getSampleId('REF_SALES', 'IN/DD-MM-YYYY/XXXX', 1), today, 'CUS-0001', 'ITEM-0001', '2', '1500', '18', 'GST', '15 Days', '0', 'Sample intra-state sale with optional charges', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', '', ''],
+          [getSampleId('REF_SALES', 'IN/DD-MM-YYYY/XXXX', 2), today, 'CUS-0002', 'ITEM-0001', '1', '2000', '18', 'IGST', '15 Days', '0', 'Sample inter-state sale; multiple attachments optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', '', 'invoice.pdf;delivery-receipt.pdf']
         ];
       case 'Purchases':
         return [
-          ['PUR-GST-0001', today, 'SUP-0001', 'ITEM-0001', '10', '1200', '18', 'GST', '15 Days', '0', 'Sample intra-state purchase with unlimited charge syntax', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', '', ''],
-          ['PUR-IGST-0002', today, 'SUP-0002', 'ITEM-0001', '5', '1200', '18', 'IGST', '15 Days', '0', 'Sample inter-state purchase; multiple attachments are optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', '', 'invoice.pdf;quality-certificate.pdf']
+          [getSampleId('REF_PURCHASE', 'PUR/DD-MM-YYYY/XXXX', 1), today, 'SUP-0001', 'ITEM-0001', '10', '1200', '18', 'GST', '15 Days', '0', 'Sample intra-state purchase with unlimited charge syntax', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', '', ''],
+          [getSampleId('REF_PURCHASE', 'PUR/DD-MM-YYYY/XXXX', 2), today, 'SUP-0002', 'ITEM-0001', '5', '1200', '18', 'IGST', '15 Days', '0', 'Sample inter-state purchase; multiple attachments are optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', '', 'invoice.pdf;quality-certificate.pdf']
         ];
       case 'Master Categories and Values':
       case 'Master Categories & Values':
@@ -169,7 +185,7 @@ window.ImportService = (function() {
         ];
       default:
         return [
-          ['ITEM-0001', 'MS Round Pipe', 'Pipe', 'Jasvi', 'Mild Steel', '25 mm', 'Nos', '73063000', '18', '0', '1200', '1500', 'Sample item', '0', '10', 'Main Warehouse']
+          [getSampleId('REF_ITEM', 'ITMXXX', 1), 'MS Round Pipe', 'Pipe', 'Jasvi', 'Mild Steel', '25 mm', 'Nos', '73063000', '18', '0', '1200', '1500', 'Sample item', '0', '10', 'Main Warehouse']
         ];
     }
   }
@@ -181,35 +197,91 @@ window.ImportService = (function() {
     if (!format) return '^.*$';
     const d = docDate ? new Date(docDate) : null;
     let out = '^';
-    for (let i = 0; i < format.length;) {
-      if (format.startsWith('YYYY', i)) {
+    const cleanFmt = format.trim().replace(/\{([A-Za-z0-9_-]+)\}/g, '$1');
+
+    let fyStart = 0;
+    let fyEnd = 0;
+    if (d) {
+      const m = d.getMonth() + 1;
+      const y = d.getFullYear();
+      fyStart = (m >= 4) ? y : (y - 1);
+      fyEnd = fyStart + 1;
+    }
+
+    for (let i = 0; i < cleanFmt.length;) {
+      // Financial Year combinations
+      if (cleanFmt.startsWith('YYYY-YYYY', i)) {
+        out += d ? `${String(fyStart).padStart(4, '0')}-${String(fyEnd).padStart(4, '0')}` : '\\d{4}-\\d{4}';
+        i += 9; continue;
+      }
+      if (cleanFmt.startsWith('YYYY/YYYY', i)) {
+        out += d ? `${String(fyStart).padStart(4, '0')}/${String(fyEnd).padStart(4, '0')}` : '\\d{4}/\\d{4}';
+        i += 9; continue;
+      }
+      if (cleanFmt.startsWith('YY-YYYY', i)) {
+        out += d ? `${String(fyStart % 100).padStart(2, '0')}-${String(fyEnd).padStart(4, '0')}` : '\\d{2}-\\d{4}';
+        i += 7; continue;
+      }
+      if (cleanFmt.startsWith('YY/YYYY', i)) {
+        out += d ? `${String(fyStart % 100).padStart(2, '0')}/${String(fyEnd).padStart(4, '0')}` : '\\d{2}/\\d{4}';
+        i += 7; continue;
+      }
+      if (cleanFmt.startsWith('YYYY-YY', i)) {
+        out += d ? `${String(fyStart).padStart(4, '0')}-${String(fyEnd % 100).padStart(2, '0')}` : '\\d{4}-\\d{2}';
+        i += 7; continue;
+      }
+      if (cleanFmt.startsWith('YYYY/YY', i)) {
+        out += d ? `${String(fyStart).padStart(4, '0')}/${String(fyEnd % 100).padStart(2, '0')}` : '\\d{4}/\\d{2}';
+        i += 7; continue;
+      }
+      if (cleanFmt.startsWith('YY-YY', i)) {
+        out += d ? `${String(fyStart % 100).padStart(2, '0')}-${String(fyEnd % 100).padStart(2, '0')}` : '\\d{2}-\\d{2}';
+        i += 5; continue;
+      }
+      if (cleanFmt.startsWith('YY/YY', i)) {
+        out += d ? `${String(fyStart % 100).padStart(2, '0')}/${String(fyEnd % 100).padStart(2, '0')}` : '\\d{2}/\\d{2}';
+        i += 5; continue;
+      }
+
+      // Pre-combined Calendar Dates
+      if (cleanFmt.startsWith('DD-MM-YYYY', i)) {
+        out += d ? `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear()).padStart(4, '0')}` : '\\d{2}-\\d{2}-\\d{4}';
+        i += 10; continue;
+      }
+      if (cleanFmt.startsWith('DD/MM/YYYY', i)) {
+        out += d ? `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).padStart(4, '0')}` : '\\d{2}/\\d{2}/\\d{4}';
+        i += 10; continue;
+      }
+      if (cleanFmt.startsWith('YYYY-MM-DD', i)) {
+        out += d ? `${String(d.getFullYear()).padStart(4, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : '\\d{4}-\\d{2}-\\d{2}';
+        i += 10; continue;
+      }
+
+      // Single tokens
+      if (cleanFmt.startsWith('YYYY', i)) {
         out += d ? String(d.getFullYear()).padStart(4, '0') : '\\d{4}';
-        i += 4;
-        continue;
+        i += 4; continue;
       }
-      if (format.startsWith('YY', i)) {
+      if (cleanFmt.startsWith('YY', i)) {
         out += d ? String(d.getFullYear() % 100).padStart(2, '0') : '\\d{2}';
-        i += 2;
-        continue;
+        i += 2; continue;
       }
-      if (format.startsWith('MM', i)) {
+      if (cleanFmt.startsWith('MM', i)) {
         out += d ? String(d.getMonth() + 1).padStart(2, '0') : '\\d{2}';
-        i += 2;
-        continue;
+        i += 2; continue;
       }
-      if (format.startsWith('DD', i)) {
+      if (cleanFmt.startsWith('DD', i)) {
         out += d ? String(d.getDate()).padStart(2, '0') : '\\d{2}';
-        i += 2;
-        continue;
+        i += 2; continue;
       }
-      if (format.charAt(i) === 'X') {
+      if (cleanFmt.charAt(i) === 'X' || cleanFmt.charAt(i) === 'x') {
         let j = i;
-        while (j < format.length && format.charAt(j) === 'X') j++;
+        while (j < cleanFmt.length && (cleanFmt.charAt(j) === 'X' || cleanFmt.charAt(j) === 'x')) j++;
         out += `\\d{${j - i},}`;
         i = j;
         continue;
       }
-      const c = format.charAt(i++);
+      const c = cleanFmt.charAt(i++);
       if ('\\.^$|?*+()[]{}'.includes(c)) out += '\\';
       out += c;
     }
@@ -357,6 +429,47 @@ window.ImportService = (function() {
   // -------------------------------------------------------------
   // 4. TEMPLATE EXCEL GENERATOR (ImportTemplateService.java Parity)
   // -------------------------------------------------------------
+  function getFieldHeaderStyle(field) {
+    const f = (field || '').toLowerCase();
+    if (['invoice_no', 'invoice_date', 'party_code', 'item_code', 'quantity', 'rate', 'name', 'description', 'category_code', 'value_code'].includes(f)) {
+      return {
+        cellStyle: {
+          fill: { patternType: 'solid', fgColor: { rgb: 'C00000' } },
+          font: { color: { rgb: 'FFFFFF' }, bold: true, sz: 11 },
+          alignment: { horizontal: 'left', vertical: 'center' }
+        },
+        comment: '[MANDATORY] Required field. Must not be empty.'
+      };
+    } else if (f.includes('gst') || ['taxable_value', 'cgst', 'sgst', 'igst', 'invoice_value'].includes(f)) {
+      return {
+        cellStyle: {
+          fill: { patternType: 'solid', fgColor: { rgb: 'D99B00' } },
+          font: { color: { rgb: '000000' }, bold: true, sz: 11 },
+          alignment: { horizontal: 'left', vertical: 'center' }
+        },
+        comment: '[TAX / GST] Tax configuration. Enter gst_type (GST/IGST) and gst_percent.'
+      };
+    } else if (f.includes('charge')) {
+      return {
+        cellStyle: {
+          fill: { patternType: 'solid', fgColor: { rgb: '2E5BFF' } },
+          font: { color: { rgb: 'FFFFFF' }, bold: true, sz: 11 },
+          alignment: { horizontal: 'left', vertical: 'center' }
+        },
+        comment: '[CHARGES] Additional invoice charges. Use additional_charges (Type|Amount|Taxable|GSTPercent;...) for multiple charges.'
+      };
+    } else {
+      return {
+        cellStyle: {
+          fill: { patternType: 'solid', fgColor: { rgb: '7F7F7F' } },
+          font: { color: { rgb: 'FFFFFF' }, bold: false, sz: 11 },
+          alignment: { horizontal: 'left', vertical: 'center' }
+        },
+        comment: '[OPTIONAL] Optional detail. Leave blank to preserve defaults.'
+      };
+    }
+  }
+
   function downloadTemplate(moduleName) {
     const fields = getModuleFields(moduleName);
     const examples = getExampleRows(moduleName);
@@ -369,6 +482,18 @@ window.ImportService = (function() {
       // Sheet 1: Import Template
       const templateData = [fields, ...examples];
       const wsTemplate = XLSX.utils.aoa_to_sheet(templateData);
+
+      // Color-code header cells & add guidance comments (Apache POI parity)
+      fields.forEach((field, colIdx) => {
+        const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+        const cell = wsTemplate[cellRef];
+        if (!cell) return;
+        const style = getFieldHeaderStyle(field);
+        cell.s = style.cellStyle;
+        if (XLSX.utils && typeof XLSX.utils.cell_add_comment === 'function') {
+          XLSX.utils.cell_add_comment(cell, style.comment, 'Jasvi ERP');
+        }
+      });
 
       // Auto-fit column widths
       wsTemplate['!cols'] = fields.map((f, colIdx) => {
@@ -386,6 +511,7 @@ window.ImportService = (function() {
       // Sheet 2: Instructions
       const guidance = [
         [`${company} ${version} Import Template`, 'Keep identifier and header names unchanged.'],
+        ['Header Color Coding', '[RED] Mandatory Required Fields | [AMBER/YELLOW] Tax & GST Fields | [BLUE] Charge Columns | [GRAY] Optional Details'],
         ['Recommended mode', 'Update non-blank fields: blank spreadsheet cells preserve existing master data.'],
         ['Create new only', 'Existing identifiers are skipped; only new records are created.'],
         ['Create or update', 'Existing master records are replaced with supplied values.'],
@@ -393,8 +519,8 @@ window.ImportService = (function() {
         ['Financial documents', 'Existing posted Sales and Purchase invoices are always protected and skipped.'],
         ['GST / IGST', 'For Sales/Purchases use gst_type = GST for intra-state or IGST for inter-state. Enter gst_percent only; ERP calculates tax amounts from line values.'],
         ['GST calculation', 'GST is calculated as CGST + SGST (equal halves); IGST applies the full GST rate as IGST. Do not enter tax amounts manually.'],
-        ['Unlimited Purchase charges', 'Purchases may use additional_charges with entries separated by semicolons (e.g. Freight|250|true|18;Packing|100|false|0).'],
-        ['Multiple Purchase attachments', 'Use attachment_files for semicolon-separated file paths.'],
+        ['Multiple Document Charges', 'Sales & Purchases support charge columns (charge_1_type, charge_1_amount, etc.) and unlimited additional_charges (Type|Amount|Taxable|GSTPercent;...).'],
+        ['Multiple Attachments', 'Use attachment_files for semicolon-separated file paths.'],
         ['Safe process', 'Run Validate only first, review the preview and generated result report, then import.']
       ];
       const wsInstructions = XLSX.utils.aoa_to_sheet(guidance);
@@ -625,7 +751,7 @@ window.ImportService = (function() {
     return charges;
   }
 
-  function parseAdditionalPurchaseCharges(text) {
+  function parseAdditionalCharges(text) {
     if (!text || typeof text !== 'string') return [];
     const out = [];
     for (const raw of text.split(';')) {
@@ -657,6 +783,7 @@ window.ImportService = (function() {
     }
     return out;
   }
+  const parseAdditionalPurchaseCharges = parseAdditionalCharges;
 
   function calculateDocumentTotals(lines, charges) {
     let gross = 0;
@@ -914,10 +1041,8 @@ window.ImportService = (function() {
         if (!rowError) {
           try {
             parseDocumentCharges(groupRows.map(g => g.row), getVal);
-            if (!isSales) {
-              const flex = getVal(firstRow, 'additional_charges');
-              if (flex) parseAdditionalPurchaseCharges(flex);
-            }
+            const flex = getVal(firstRow, 'additional_charges');
+            if (flex) parseAdditionalCharges(flex);
           } catch (chargeErr) {
             rowError = chargeErr.message;
           }
@@ -1453,6 +1578,10 @@ window.ImportService = (function() {
 
             // Extract charges and calculate totals with charges (Desktop parity)
             const charges = parseDocumentCharges(gRows.map(g => g.row), getVal);
+            const additionalText = getVal(first, 'additional_charges');
+            if (additionalText) {
+              charges.push(...parseAdditionalCharges(additionalText));
+            }
             const totals = calculateDocumentTotals(lines, charges);
             const totalQty = lines.reduce((acc, l) => acc + (l.quantity || 0), 0);
             const paymentTerms = getVal(first, 'payment_terms') || '15 Days';

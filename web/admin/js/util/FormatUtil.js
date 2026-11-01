@@ -582,12 +582,37 @@
     formatDatedReference(pattern, seq = 1, date = new Date()) {
       if (!pattern || typeof pattern !== 'string') return '';
       const d = (date instanceof Date) ? date : (this.parseDate(date) || new Date());
-      const yyyy = String(d.getFullYear());
+      const month = d.getMonth() + 1;
+      const year = d.getFullYear();
+      const fyStart = (month >= 4) ? year : (year - 1);
+      const fyEnd = fyStart + 1;
+      const fyStartYy = String(fyStart % 100).padStart(2, '0');
+      const fyEndYy = String(fyEnd % 100).padStart(2, '0');
+      const fyStartYyyy = String(fyStart);
+      const fyEndYyyy = String(fyEnd);
+
+      const yyyy = String(year);
       const yy = yyyy.slice(-2);
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const mm = String(month).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
 
       let res = pattern
+        .replace(/\{?YYYY-YYYY\}?/gi, `${fyStartYyyy}-${fyEndYyyy}`)
+        .replace(/\{?YYYY\/YYYY\}?/gi, `${fyStartYyyy}/${fyEndYyyy}`)
+        .replace(/\{?YY-YYYY\}?/gi, `${fyStartYy}-${fyEndYyyy}`)
+        .replace(/\{?YY\/YYYY\}?/gi, `${fyStartYy}/${fyEndYyyy}`)
+        .replace(/\{?YYYY-YY\}?/gi, `${fyStartYyyy}-${fyEndYy}`)
+        .replace(/\{?YYYY\/YY\}?/gi, `${fyStartYyyy}/${fyEndYy}`)
+        .replace(/\{?YY-YY\}?/gi, `${fyStartYy}-${fyEndYy}`)
+        .replace(/\{?YY\/YY\}?/gi, `${fyStartYy}/${fyEndYy}`)
+        .replace(/\{YY\}-\{YYYY\}/gi, `${fyStartYy}-${fyEndYyyy}`)
+        .replace(/\{YY\}\/\{YYYY\}/gi, `${fyStartYy}/${fyEndYyyy}`)
+        .replace(/\{YYYY\}-\{YYYY\}/gi, `${fyStartYyyy}-${fyEndYyyy}`)
+        .replace(/\{YYYY\}\/\{YYYY\}/gi, `${fyStartYyyy}/${fyEndYyyy}`)
+        .replace(/\{YYYY\}-\{YY\}/gi, `${fyStartYyyy}-${fyEndYy}`)
+        .replace(/\{YYYY\}\/\{YY\}/gi, `${fyStartYyyy}/${fyEndYy}`)
+        .replace(/\{YY\}-\{YY\}/gi, `${fyStartYy}-${fyEndYy}`)
+        .replace(/\{YY\}\/\{YY\}/gi, `${fyStartYy}/${fyEndYy}`)
         .replace(/\{?DD-MM-YYYY\}?/gi, `${dd}-${mm}-${yyyy}`)
         .replace(/\{?DD\/MM\/YYYY\}?/gi, `${dd}/${mm}/${yyyy}`)
         .replace(/\{?YYYY-MM-DD\}?/gi, `${yyyy}-${mm}-${dd}`)

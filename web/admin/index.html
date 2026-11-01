@@ -81,7 +81,7 @@
     html.auth-forgot #form-login { display: none !important; }
     html.auth-forgot #auth-card-col { max-width: 860px !important; }
   </style>
-  <link rel="stylesheet" href="css/app.css?v=11.0.14.01">
+  <link rel="stylesheet" href="css/app.css?v=11.0.20.01">
   <script>
     /* --- Immediate live clock: starts on head parse, before any font/script load (Desktop ClockService parity) --- */
     (function() {
@@ -766,7 +766,7 @@
             </div>
             <div id="menu-version-footer"
               style="padding: 8px 14px; font-size: 0.68rem; color: var(--text-dim); border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1);">
-              <span>Web Studio</span><span style="color: var(--cyan); font-weight: 600;">v11.0.14.01</span></div>
+              <span>Web Studio</span><span style="color: var(--cyan); font-weight: 600;">v11.0.20.01</span></div>
           </div>
         </div>
       </div>
@@ -6486,6 +6486,11 @@
               <span style="color: var(--cyan); font-size: 0.72rem;">XXXX = Sequence Digits</span>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{DD-MM-YYYY}')">+ {DD-MM-YYYY}</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{YY-YYYY}')" title="Indian FY 2-4 Digit (e.g. 25-2026)">+ {YY-YYYY}</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{YYYY-YYYY}')" title="Indian FY 4-4 Digit (e.g. 2025-2026)">+ {YYYY-YYYY}</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{YYYY-YY}')" title="Indian FY 4-2 Digit (e.g. 2025-26)">+ {YYYY-YY}</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{YY-YY}')" title="Indian FY 2-2 Digit (e.g. 25-26)">+ {YY-YY}</button>
               <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{DD}')">+ {DD}</button>
               <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{MM}')">+ {MM}</button>
               <button type="button" class="btn btn-secondary btn-sm" style="font-size: 0.74rem; padding: 2px 8px; height: 26px; font-family: monospace;" onclick="window.MasterDataController.insertFormatToken('{YYYY}')">+ {YYYY}</button>
@@ -6511,6 +6516,97 @@
           onclick="window.MasterDataController.closeLookupModal()">Cancel</button>
         <button type="button" class="btn btn-primary" onclick="window.MasterDataController.submitLookupSave()">Save
           Lookup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL REFERENCE FORMAT SYNC MODAL (Desktop Parity) -->
+  <div class="modal-overlay" id="modal-sync-ref-formats" style="display: none;">
+    <div class="modal-box" style="max-width: 580px; width: 100%; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div>
+          <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">Synchronize All Reference Formats</h3>
+          <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-muted);">Standardize identifier formatting across all document types at once</p>
+        </div>
+        <button class="modal-close" onclick="window.MasterDataController.closeSyncAllRefFormatsModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 16px;">
+        <div style="padding: 10px 14px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; margin-bottom: 14px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          This will update the format pattern for all document categories (<strong style="color: var(--cyan);">Sales, Purchases, Customers, Suppliers, Items, Quotations, Returns, Payments, Journal Vouchers</strong>) while preserving each category's standard prefix.
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-weight: 600;">Date / Year Pattern *</label>
+          <select id="m-sync-ref-pattern" class="form-select" onchange="window.MasterDataController.updateSyncPreview()" style="width: 100%; height: 36px;">
+            <option value="DD-MM-YYYY" selected>DD-MM-YYYY (Pure Indian Calendar Date - e.g. PREFIX/DD-MM-YYYY/XXXX) [Recommended]</option>
+            <option value="YY-YYYY">YY-YYYY (Indian Financial Year 2-4 Digit - e.g. PREFIX/25-2026/XXXX)</option>
+            <option value="YYYY-YYYY">YYYY-YYYY (Indian Financial Year 4-4 Digit - e.g. PREFIX/2025-2026/XXXX)</option>
+            <option value="YYYY-YY">YYYY-YY (Indian Financial Year 4-2 Digit - e.g. PREFIX/2025-26/XXXX)</option>
+            <option value="YY-YY">YY-YY (Indian Financial Year 2-2 Digit - e.g. PREFIX/25-26/XXXX)</option>
+            <option value="YYYY">YYYY (Calendar Year - e.g. PREFIX/2026/XXXX)</option>
+            <option value="YY">YY (Short Calendar Year - e.g. PREFIX/26/XXXX)</option>
+            <option value="MM-YYYY">MM-YYYY (Month & Year - e.g. PREFIX/11-2026/XXXX)</option>
+            <option value="YYYY-MM-DD">YYYY-MM-DD (ISO Date - e.g. PREFIX/2026-11-01/XXXX)</option>
+            <option value="NONE">NONE (No Date/Year - e.g. PREFIX/XXXX)</option>
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Delimiter</label>
+            <select id="m-sync-ref-delimiter" class="form-select" onchange="window.MasterDataController.updateSyncPreview()" style="width: 100%; height: 36px;">
+              <option value="/" selected>/ (Forward Slash - Standard)</option>
+              <option value="-">- (Hyphen)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-weight: 600;">Sequence Digits (Zero Padded)</label>
+            <select id="m-sync-ref-seq-width" class="form-select" onchange="window.MasterDataController.updateSyncPreview()" style="width: 100%; height: 36px;">
+              <option value="4" selected>XXXX (4 Digits: 0001)</option>
+              <option value="5">XXXXX (5 Digits: 00001)</option>
+              <option value="6">XXXXXX (6 Digits: 000001)</option>
+              <option value="3">XXX (3 Digits: 001)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-weight: 600; color: var(--cyan);">Live Multi-Document Sample Preview</label>
+          <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 14px; font-family: monospace; font-size: 0.8rem; line-height: 1.8;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px; margin-bottom: 4px; font-weight: 700; color: var(--text-muted); font-size: 0.72rem;">
+              <span>DOCUMENT TYPE</span>
+              <span>RESOLVED SAMPLE IDENTIFIER</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Sales Invoice (REF_SALES):</span>
+              <strong id="sync-preview-sales" style="color: #38bdf8;">-</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Purchase Bill (REF_PURCHASE):</span>
+              <strong id="sync-preview-purchase" style="color: #38bdf8;">-</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Customer Code (REF_CUSTOMER):</span>
+              <strong id="sync-preview-customer" style="color: #34d399;">-</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Supplier Code (REF_SUPPLIER):</span>
+              <strong id="sync-preview-supplier" style="color: #34d399;">-</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Item Code (REF_ITEM):</span>
+              <strong id="sync-preview-item" style="color: #fbbf24;">-</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--text-muted);">Journal Voucher (REF_JOURNAL):</span>
+              <strong id="sync-preview-journal" style="color: #a78bfa;">-</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-subtle);">
+        <button type="button" class="btn btn-secondary" onclick="window.MasterDataController.closeSyncAllRefFormatsModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="window.MasterDataController.submitSyncAllRefFormats()">Apply to All Document Types</button>
       </div>
     </div>
   </div>
@@ -7874,80 +7970,80 @@
   <!-- JAVASCRIPT STUDIO ENGINE -->
   <!-- MVC ARCHITECTURE - DESKTOP PARITY -->
   <!-- 0. Centralized Runtime Version Registry -->
-  <script src="js/version.js?v=11.0.14.01"></script>
+  <script src="js/version.js?v=11.0.20.01"></script>
 
   <!-- 1. Utilities matching org.example.util -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="js/util/xlsx.full.min.js?v=11.0.14.01"></script>
-  <script src="js/util/FormatUtil.js?v=11.0.14.01"></script>
-  <script src="js/util/DatePickerFormatter.js?v=11.0.14.01"></script>
-  <script src="js/util/AmountInWordsConverter.js?v=11.0.14.01"></script>
-  <script src="js/util/DocumentCalculationEngine.js?v=11.0.14.01"></script>
-  <script src="js/util/AudioSynthesizer.js?v=11.0.14.01"></script>
-  <script src="js/util/UiSemanticRegistry.js?v=11.0.14.01"></script>
-  <script src="js/util/DynamicTableLayoutManager.js?v=11.0.14.01"></script>
-  <script src="js/util/TableUiEnhancer.js?v=11.0.14.01"></script>
-  <script src="js/util/KpiCardEnhancer.js?v=11.0.14.01"></script>
-  <script src="js/util/LabelIconEnhancer.js?v=11.0.14.01"></script>
-  <script src="js/util/ButtonIconEnhancer.js?v=11.0.14.01"></script>
-  <script src="js/util/PaginationUiEnhancer.js?v=11.0.14.01"></script>
-  <script src="js/util/WorkflowFocusManager.js?v=11.0.14.01"></script>
-  <script src="js/util/GlobalUiEnhancer.js?v=11.0.14.01"></script>
-  <script src="js/util/AppDialogService.js?v=11.0.14.01"></script>
-  <script src="js/util/UserFacingErrorMapper.js?v=11.0.14.01"></script>
-  <script src="js/util/FormDirtyTracker.js?v=11.0.14.01"></script>
-  <script src="js/util/DeepLinkService.js?v=11.0.14.01"></script>
-  <script src="js/util/BarcodeGenerator.js?v=11.0.14.01"></script>
-  <script src="js/util/ShortcutManager.js?v=11.0.14.01"></script>
-  <script src="js/util/RegisterUiSupport.js?v=11.0.14.01"></script>
-  <script src="js/util/DocumentPdfGenerator.js?v=11.0.14.01"></script>
-  <script src="js/util/DocumentExcelGenerator.js?v=11.0.14.01"></script>
+  <script src="js/util/xlsx.full.min.js?v=11.0.20.01"></script>
+  <script src="js/util/FormatUtil.js?v=11.0.20.01"></script>
+  <script src="js/util/DatePickerFormatter.js?v=11.0.20.01"></script>
+  <script src="js/util/AmountInWordsConverter.js?v=11.0.20.01"></script>
+  <script src="js/util/DocumentCalculationEngine.js?v=11.0.20.01"></script>
+  <script src="js/util/AudioSynthesizer.js?v=11.0.20.01"></script>
+  <script src="js/util/UiSemanticRegistry.js?v=11.0.20.01"></script>
+  <script src="js/util/DynamicTableLayoutManager.js?v=11.0.20.01"></script>
+  <script src="js/util/TableUiEnhancer.js?v=11.0.20.01"></script>
+  <script src="js/util/KpiCardEnhancer.js?v=11.0.20.01"></script>
+  <script src="js/util/LabelIconEnhancer.js?v=11.0.20.01"></script>
+  <script src="js/util/ButtonIconEnhancer.js?v=11.0.20.01"></script>
+  <script src="js/util/PaginationUiEnhancer.js?v=11.0.20.01"></script>
+  <script src="js/util/WorkflowFocusManager.js?v=11.0.20.01"></script>
+  <script src="js/util/GlobalUiEnhancer.js?v=11.0.20.01"></script>
+  <script src="js/util/AppDialogService.js?v=11.0.20.01"></script>
+  <script src="js/util/UserFacingErrorMapper.js?v=11.0.20.01"></script>
+  <script src="js/util/FormDirtyTracker.js?v=11.0.20.01"></script>
+  <script src="js/util/DeepLinkService.js?v=11.0.20.01"></script>
+  <script src="js/util/BarcodeGenerator.js?v=11.0.20.01"></script>
+  <script src="js/util/ShortcutManager.js?v=11.0.20.01"></script>
+  <script src="js/util/RegisterUiSupport.js?v=11.0.20.01"></script>
+  <script src="js/util/DocumentPdfGenerator.js?v=11.0.20.01"></script>
+  <script src="js/util/DocumentExcelGenerator.js?v=11.0.20.01"></script>
 
   <!-- 2. Services matching org.example.service -->
-  <script src="js/services/BrandingService.js?v=11.0.14.01"></script>
-  <script src="js/services/ApiService.js?v=11.0.14.01"></script>
-  <script src="js/services/AuthService.js?v=11.0.14.01"></script>
-  <script src="js/services/ViewLoader.js?v=11.0.14.01"></script>
-  <script src="js/services/NotificationService.js?v=11.0.14.01"></script>
-  <script src="js/services/MasterService.js?v=11.0.14.01"></script>
-  <script src="js/services/OperationsService.js?v=11.0.14.01"></script>
-  <script src="js/services/ReportService.js?v=11.0.14.01"></script>
-  <script src="js/services/ReconService.js?v=11.0.14.01"></script>
-  <script src="js/services/AccountingService.js?v=11.0.14.01"></script>
-  <script src="js/services/ImportService.js?v=11.0.14.01"></script>
+  <script src="js/services/BrandingService.js?v=11.0.20.01"></script>
+  <script src="js/services/ApiService.js?v=11.0.20.01"></script>
+  <script src="js/services/AuthService.js?v=11.0.20.01"></script>
+  <script src="js/services/ViewLoader.js?v=11.0.20.01"></script>
+  <script src="js/services/NotificationService.js?v=11.0.20.01"></script>
+  <script src="js/services/MasterService.js?v=11.0.20.01"></script>
+  <script src="js/services/OperationsService.js?v=11.0.20.01"></script>
+  <script src="js/services/ReportService.js?v=11.0.20.01"></script>
+  <script src="js/services/ReconService.js?v=11.0.20.01"></script>
+  <script src="js/services/AccountingService.js?v=11.0.20.01"></script>
+  <script src="js/services/ImportService.js?v=11.0.20.01"></script>
 
   <!-- 3. Controllers matching org.example.controller -->
-  <script src="js/controllers/DashboardController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/SalesController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/PurchaseController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/ReturnsController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/CreditDebitNoteController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/QuotationController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/ItemMasterController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/PartyController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/FinanceController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/BankStatementController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/PurchaseReconController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/CommunicationController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/BarcodeStudioController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/GstController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/EWayBillController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/AutomationCenterController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/ImportController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/ReportsController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/ReminderCenterController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/MasterDataController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/UserAccessController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/ProfileController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/SettingsController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/GlobalSearchController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/NotificationCenterController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/RecordPaymentController.js?v=11.0.14.01"></script>
-  <script src="js/controllers/DiagnosticsController.js?v=11.0.14.01"></script>
+  <script src="js/controllers/DashboardController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/SalesController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/PurchaseController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/ReturnsController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/CreditDebitNoteController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/QuotationController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/ItemMasterController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/PartyController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/FinanceController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/BankStatementController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/PurchaseReconController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/CommunicationController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/BarcodeStudioController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/GstController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/EWayBillController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/AutomationCenterController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/ImportController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/ReportsController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/ReminderCenterController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/MasterDataController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/UserAccessController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/ProfileController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/SettingsController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/GlobalSearchController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/NotificationCenterController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/RecordPaymentController.js?v=11.0.20.01"></script>
+  <script src="js/controllers/DiagnosticsController.js?v=11.0.20.01"></script>
 
   <!-- 4. Navigation & App Lifecycle matching org.example.navigation & app -->
-  <script src="js/navigation/NavigationRouter.js?v=11.0.14.01"></script>
-  <script src="js/app.js?v=11.0.14.01"></script>
+  <script src="js/navigation/NavigationRouter.js?v=11.0.20.01"></script>
+  <script src="js/app.js?v=11.0.20.01"></script>
 </body>
 
 </html>

@@ -256,6 +256,36 @@ window.MasterService = (function() {
       const data = await window.ApiService.get('/api/master/sales-entry-bootstrap');
       setCached(cacheKey, data);
       return data;
+    },
+
+    // Reference Formats Authority
+    async getReferenceFormats(forceRefresh = false) {
+      const cacheKey = 'master_reference_formats';
+      if (!forceRefresh) {
+        const cached = getCached(cacheKey);
+        if (cached) return cached;
+      }
+      try {
+        const res = await window.ApiService.get('/api/master/reference-formats');
+        const formats = (res && res.formats) || res || {};
+        setCached(cacheKey, formats);
+        this._cachedReferenceFormats = formats;
+        return formats;
+      } catch (e) {
+        console.warn('Failed to load reference formats:', e);
+        return {};
+      }
+    },
+
+    async syncAllReferenceFormats(pattern, delimiter, seqWidth) {
+      const res = await window.ApiService.post('/api/master/reference-formats/sync-all', {
+        pattern, delimiter, seqWidth
+      });
+      invalidateCache('master_reference_formats');
+      invalidateCache('lookups_');
+      const formats = (res && res.formats) || res || {};
+      this._cachedReferenceFormats = formats;
+      return formats;
     }
   };
 })();
