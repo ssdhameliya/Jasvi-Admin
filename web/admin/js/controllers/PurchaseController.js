@@ -293,6 +293,7 @@ window.PurchaseController = (function() {
               <div id="pur-action-menu-${invNo.replace(/[^a-zA-Z0-9]/g, '_')}" class="action-dropdown-menu" style="display:none; position:fixed; z-index:100005; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.5); min-width:240px; white-space:nowrap; padding:6px 0; text-align:left;">
                 <div class="action-menu-item" onclick="window.PurchaseController.openPurchaseView('${invNo}')"><span style="margin-right:8px;">📄</span> View Purchase (Read-Only)</div>
                 <div class="action-menu-item" onclick="window.PurchaseController.showDetails('${invNo}')"><span style="margin-right:8px;">👁️</span> View Details</div>
+                <div class="action-menu-item" onclick="window.UniversalLinkageService.showLinkage('PURCHASE', ${p.id || 0}, '${invNo}')"><span style="margin-right:8px;">🔗</span> View Bank Linkage</div>
                 <div class="action-menu-item" onclick="window.PurchaseController.duplicatePurchase('${invNo}')"><span style="margin-right:8px;">📋</span> Duplicate Purchase</div>
                 <div class="action-menu-item" onclick="window.PurchaseController.openPayments('${invNo}')"><span style="margin-right:8px;">💳</span> View / Record Payments</div>
                 <div class="action-menu-item" onclick="window.PurchaseController.openPurchaseEditor('${invNo}')"><span style="margin-right:8px;">✏️</span> Edit Purchase</div>

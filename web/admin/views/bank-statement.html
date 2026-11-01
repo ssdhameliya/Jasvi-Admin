@@ -456,9 +456,14 @@
               </label>
               <span style="font-size: 0.72rem; color: var(--text-dim); display: block; margin-bottom: 8px;">Download our standard pre-formatted Excel template.</span>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.BankStatementController.downloadStandardBankTemplate()" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
-              <span>📥</span> Download Bank Template (.xlsx)
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.BankStatementController.downloadStandardBankTemplate('xlsx')" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                <span>📥</span> Template (.xlsx)
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.BankStatementController.downloadStandardBankTemplate('csv')" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                <span>📥</span> Template (.csv)
+              </button>
+            </div>
           </div>
         </div>
 

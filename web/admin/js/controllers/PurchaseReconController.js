@@ -270,6 +270,7 @@ window.PurchaseReconController = (function() {
               <div id="recon-action-menu-${r.id}" class="action-dropdown-menu" style="display:none; position:fixed; z-index:100005; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,0.5); min-width:200px; padding:6px 0; text-align:left;">
                 <div class="action-menu-item" onclick="window.PurchaseReconController.openEditRecon(${r.id})"><span style="margin-right:8px;">👁️</span> View Recon</div>
                 <div class="action-menu-item" onclick="window.PurchaseReconController.openEditRecon(${r.id})"><span style="margin-right:8px;">✏️</span> Edit Recon</div>
+                <div class="action-menu-item" onclick="window.UniversalLinkageService.showLinkage('PURCHASE_RECON', ${r.id}, '${r.reference || ''}')"><span style="margin-right:8px;">🔗</span> View Bank Linkage</div>
                 ${((r.linkedAmount && r.linkedAmount > 0.009) || (r.bankAllocatedAmount && r.bankAllocatedAmount > 0.009)) ? `
                   <div class="action-menu-item" onclick="window.PurchaseReconController.viewBankLinks(${r.id})"><span style="margin-right:8px;">🏦</span> Open Bank Statement</div>
                 ` : ''}

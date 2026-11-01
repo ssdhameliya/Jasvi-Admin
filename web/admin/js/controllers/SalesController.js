@@ -588,6 +588,9 @@ window.SalesController = {
     const sale = this.salesCache.find(s => (s.invoiceNo || s.number) === invNo);
 
     switch (actionKey) {
+      case 'VIEW_LINKAGE':
+        window.UniversalLinkageService.showLinkage('SALE', sale ? sale.id : null, invNo);
+        break;
       case 'VIEW':
         this.openSaleViewMode(invNo);
         break;

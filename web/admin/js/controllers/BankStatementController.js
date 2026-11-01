@@ -90,7 +90,8 @@ window.BankStatementController = (function() {
       const isSel = (selectedId && b.id === selectedId) || (!selectedId && b === list[0]);
       const masked = maskAccount(b.bankAccount);
       const isUnrec = (b.reconciliationPercent != null && b.reconciliationPercent < 100) || (b.status !== 'RECONCILED' && b.status !== 'FULLY_RECONCILED');
-      const label = `${isUnrec ? '⚠️ ' : '✅ '}${b.bankName || 'Bank'} (${masked}) • ${b.statementFrom || ''} to ${b.statementTo || ''} [${b.transactionCount || 0} rows]`;
+      const refBadge = b.statementReference ? `[${b.statementReference}] ` : '';
+      const label = `${isUnrec ? '⚠️ ' : '✅ '}${refBadge}${b.bankName || 'Bank'} (${masked}) • ${b.statementFrom || ''} to ${b.statementTo || ''} [${b.transactionCount || 0} rows]`;
       return `<option value="${b.id}" ${isSel ? 'selected' : ''}>${label}</option>`;
     }).join('');
   }
@@ -307,29 +308,40 @@ window.BankStatementController = (function() {
       const hasMultiAlloc = targets.length > 1;
       const docLink = t.linkedDocumentNo || t.matchLink;
 
-      let matchHtml = '<span style="color:var(--text-dim); font-size:0.75rem;">-</span>';
-      if (targets.length > 1) {
-        matchHtml = `
-          <span class="pill-badge pill-purple clickable" onclick="event.stopPropagation(); window.BankStatementController.showLinkedAllocations(${t.id})" title="Click to view all ${targets.length} linked targets (${targets.map(x => x.documentNo).join(', ')})" style="display:inline-flex; align-items:center; gap:5px; font-weight:700; cursor:pointer;">
-            <span>🔗</span> Multi (${targets.length} linked)
+      const badges = [];
+      if (t.voucherNo) {
+        badges.push(`
+          <span class="pill-badge pill-purple clickable" onclick="event.stopPropagation(); window.BankStatementController.openLinkedDocument('${t.voucherNo.replace(/'/g, "\\'")}', 'BANK_ENTRY', null, ${t.financeId || 'null'})" title="Bank Entry: ${t.voucherNo}" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; cursor:pointer;">
+            <span>🏦</span> ${t.voucherNo}
           </span>
-        `;
+        `);
+      }
+      if (targets.length > 1) {
+        badges.push(`
+          <span class="pill-badge pill-purple clickable" onclick="event.stopPropagation(); window.BankStatementController.showLinkedAllocations(${t.id})" title="Click to view all ${targets.length} linked targets (${targets.map(x => x.documentNo).join(', ')})" style="display:inline-flex; align-items:center; gap:5px; font-weight:700; cursor:pointer;">
+            <span>🔗</span> Multi (${targets.length})
+          </span>
+        `);
       } else if (targets.length === 1) {
         const tgt = targets[0];
-        matchHtml = `
-          <span class="pill-badge ${tgt.badgeClass} clickable" onclick="event.stopPropagation(); window.BankStatementController.openLinkedDocument('${tgt.documentNo.replace(/'/g, "\\'")}', '${tgt.rawType || ''}')" title="Click to navigate to ${tgt.documentNo}" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; cursor:pointer; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-            <span>${tgt.icon}</span> ${tgt.documentNo}
-          </span>
-        `;
-      } else if (docLink) {
-        matchHtml = `
-          <span class="pill-badge pill-cyan clickable" onclick="event.stopPropagation(); window.BankStatementController.openLinkedDocument('${docLink.replace(/'/g, "\\'")}', '${t.linkedTargetType || ''}')" title="Click to navigate to ${docLink}" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; cursor:pointer; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+        if (!t.voucherNo || tgt.documentNo !== t.voucherNo) {
+          badges.push(`
+            <span class="pill-badge ${tgt.badgeClass} clickable" onclick="event.stopPropagation(); window.BankStatementController.openLinkedDocument('${tgt.documentNo.replace(/'/g, "\\'")}', '${tgt.rawType || ''}', ${tgt.targetId || 'null'}, ${t.financeId || 'null'})" title="Document: ${tgt.documentNo}" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; cursor:pointer; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              <span>${tgt.icon}</span> ${tgt.documentNo}
+            </span>
+          `);
+        }
+      } else if (docLink && (!t.voucherNo || docLink !== t.voucherNo)) {
+        badges.push(`
+          <span class="pill-badge pill-cyan clickable" onclick="event.stopPropagation(); window.BankStatementController.openLinkedDocument('${docLink.replace(/'/g, "\\'")}', '${t.linkedTargetType || ''}', ${t.linkedTargetId || 'null'}, ${t.financeId || 'null'})" title="Document: ${docLink}" style="display:inline-flex; align-items:center; gap:5px; font-weight:600; cursor:pointer; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
             <span>🔗</span> ${docLink}
           </span>
-        `;
-      } else if (t.suggestedConfidence) {
-        matchHtml = `<span class="pill-badge pill-warning" style="font-size:0.72rem; display:inline-flex; align-items:center; gap:4px;">💡 ${t.suggestedConfidence.toFixed(0)}% match</span>`;
+        `);
       }
+
+      let matchHtml = badges.length > 0
+        ? `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${badges.join('')}</div>`
+        : (t.suggestedConfidence ? `<span class="pill-badge pill-warning" style="font-size:0.72rem; display:inline-flex; align-items:center; gap:4px;">💡 ${t.suggestedConfidence.toFixed(0)}% match</span>` : '<span style="color:var(--text-dim); font-size:0.75rem;">-</span>');
 
       return `
         <tr data-stmt-id="${t.id}" onclick="window.BankStatementController.onTxnRowClick(${t.id}, event)" style="cursor:pointer; ${isSelected ? 'background:rgba(56,189,248,0.06);' : ''}">
@@ -2871,7 +2883,7 @@ window.BankStatementController = (function() {
     }, delayMs);
   }
 
-  function openLinkedDocument(docRef, targetType = '') {
+  function openLinkedDocument(docRef, targetType = '', targetId = null, financeId = null) {
     if (!docRef) return;
     const modal = document.getElementById('modal-linked-allocations');
     if (modal) modal.style.display = 'none';
@@ -2968,8 +2980,9 @@ window.BankStatementController = (function() {
     }
     // 7. Operating Expense
     else if (type === 'EXPENSE' || ref.startsWith('EXP') || ref.startsWith('VCH') || ref.startsWith('OPEX')) {
-      const m = docRef.match(/\d+/);
-      const fid = m ? parseInt(m[0], 10) : null;
+      const parts = docRef.split(/[\/\-\s]+/);
+      const lastPart = parts[parts.length - 1];
+      const fid = financeId || (targetId ? parseInt(targetId, 10) : (lastPart && /^\d+$/.test(lastPart) ? parseInt(lastPart, 10) : null));
       if (window.FinanceController && typeof window.FinanceController.requestLinkedEntry === 'function' && fid) {
         window.FinanceController.requestLinkedEntry('EXPENSE', fid, docRef);
       } else {
@@ -2986,8 +2999,9 @@ window.BankStatementController = (function() {
     }
     // 8. Bank Journal / Bank Entry
     else if (type === 'BANK_ENTRY' || ref.startsWith('BANK') || ref.startsWith('JRN') || ref.startsWith('DEP') || ref.startsWith('WDL') || ref.startsWith('BE/') || ref.startsWith('BE-') || ref.startsWith('BSE-')) {
-      const m = docRef.match(/\d+/);
-      const fid = m ? parseInt(m[0], 10) : null;
+      const parts = docRef.split(/[\/\-\s]+/);
+      const lastPart = parts[parts.length - 1];
+      const fid = financeId || (targetId ? parseInt(targetId, 10) : (lastPart && /^\d+$/.test(lastPart) ? parseInt(lastPart, 10) : null));
       if (window.FinanceController && typeof window.FinanceController.requestLinkedEntry === 'function' && fid) {
         window.FinanceController.requestLinkedEntry('BANK', fid, docRef);
       } else {
@@ -3112,7 +3126,29 @@ window.BankStatementController = (function() {
     }).join('');
   }
 
-  function downloadStandardBankTemplate() {
+  function downloadStandardBankTemplate(format = 'xlsx') {
+    if (format === 'csv') {
+      const csvHeaders = 'Transaction Date *,Value Date,Description *,Reference / UTR,Amount *,Direction *,Balance';
+      const today = new Date().toISOString().slice(0, 10);
+      const csvSample = [
+        `${today},${today},"NEFT CR - RELIANCE INDUSTRIES LTD - INV-SETTLEMENT",UTR98234710123,150000.00,CR,1250000.00`,
+        `${today},${today},"RTGS DR - TATA STEEL LTD - RAW MATERIAL VENDOR",UTR98234710456,85000.00,DR,1165000.00`,
+        `${today},${today},"UPI DR - VENDOR ADVANCE PAYMENT",UPI48291038472,24500.00,DR,1140500.00`
+      ];
+      const csvContent = '# JASVI INDUSTRIES ERP - STANDARD BANK STATEMENT TEMPLATE\n' +
+        '# Mandatory columns: Transaction Date (YYYY-MM-DD or DD/MM/YYYY), Description, Amount (positive number), Direction (CR for deposit / DR for withdrawal)\n' +
+        csvHeaders + '\n' + csvSample.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Bank_Statement_Template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
     if (!window.XLSX) {
       alert('Spreadsheet engine is initializing. Please wait a moment and try again.');
       return;

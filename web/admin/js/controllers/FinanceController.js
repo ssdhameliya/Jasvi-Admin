@@ -536,7 +536,8 @@ window.FinanceController = {
                 ::: Actions
               </button>
               <div id="bank-action-menu-${v.id}" class="action-dropdown-menu" style="display:none; position:fixed; z-index:100005; background:#0b1324; border:1px solid rgba(255,255,255,0.14); border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.7); min-width:220px; white-space:nowrap; padding:6px 0; text-align:left;">
-                <div class="action-menu-item" onclick="window.FinanceController.openLinkedTransactionsDialog(${v.id}, 'BANK')"><span style="margin-right:8px;">🔗</span> Linked ERP Transactions</div>
+                <div class="action-menu-item" onclick="window.UniversalLinkageService.showLinkage('BANK_ENTRY', ${v.id}, '${v.voucherNo || ''}')"><span style="margin-right:8px;">🔗</span> View Bank Linkage</div>
+                <div class="action-menu-item" onclick="window.FinanceController.openLinkedTransactionsDialog(${v.id}, 'BANK')"><span style="margin-right:8px;">📑</span> Linked ERP Transactions</div>
                 <div class="action-menu-item" onclick="window.FinanceController.showBankDetails(${v.id})"><span style="margin-right:8px;">👁️</span> View Details</div>
                 <div class="action-menu-item" onclick="window.FinanceController.openEditFinanceEntry(${v.id})"><span style="margin-right:8px;">✏️</span> Edit Entry</div>
                 ${stmId ? `<div class="action-menu-item" onclick="window.FinanceController.openBankStatement(${stmId})"><span style="margin-right:8px;">🏛️</span> View Bank Statement</div>` : ''}
@@ -1017,7 +1018,8 @@ window.FinanceController = {
                 ::: Actions
               </button>
               <div id="expense-action-menu-${v.id}" class="action-dropdown-menu" style="display:none; position:fixed; z-index:100005; background:#0b1324; border:1px solid rgba(255,255,255,0.14); border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.7); min-width:220px; white-space:nowrap; padding:6px 0; text-align:left;">
-                <div class="action-menu-item" onclick="window.FinanceController.openLinkedTransactionsDialog(${v.id}, 'EXPENSE')"><span style="margin-right:8px;">🔗</span> Linked ERP Transactions</div>
+                <div class="action-menu-item" onclick="window.UniversalLinkageService.showLinkage('EXPENSE', ${v.id}, '${v.voucherNo || ''}')"><span style="margin-right:8px;">🔗</span> View Bank Linkage</div>
+                <div class="action-menu-item" onclick="window.FinanceController.openLinkedTransactionsDialog(${v.id}, 'EXPENSE')"><span style="margin-right:8px;">📑</span> Linked ERP Transactions</div>
                 <div class="action-menu-item" onclick="window.FinanceController.showExpenseDetails(${v.id})"><span style="margin-right:8px;">👁️</span> View Details</div>
                 <div class="action-menu-item" onclick="window.FinanceController.openEditFinanceEntry(${v.id})"><span style="margin-right:8px;">✏️</span> Edit Expense</div>
                 ${stmId ? `<div class="action-menu-item" onclick="window.FinanceController.openBankStatement(${stmId})"><span style="margin-right:8px;">🏛️</span> View Bank Statement</div>` : ''}
