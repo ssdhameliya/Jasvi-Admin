@@ -641,7 +641,7 @@ window.RecordPaymentController = (function() {
 
         return `
           <tr>
-            <td><span class="pill-badge pill-neutral">${p.mode || 'Bank Transfer'}</span></td>
+            <td><span class="pill-badge pill-cyan" style="cursor:pointer; font-family:'JetBrains Mono',monospace; font-weight:700;" onclick="event.stopPropagation(); window.RecordPaymentController.onPaymentRefClick(${p.id || idx})" title="Click to navigate to matched Bank Statement record">${p.paymentReference || ('PRF-' + pId)}</span></td><td><span class="pill-badge pill-neutral">${p.mode || 'Bank Transfer'}</span></td>
             <td style="font-family: 'Space Grotesk', monospace; color: var(--cyan);">${p.reference || '-'}</td>
             <td style="font-weight: 600; color: var(--text-main);">${party}</td>
             <td style="text-align: right; font-weight: 700; color: #34d399;">${formatMoney(amt)}</td>
@@ -662,6 +662,32 @@ window.RecordPaymentController = (function() {
           </tr>
         `;
       }).join('');
+    },
+
+    onPaymentRefClick(paymentId) {
+      const p = paymentHistory.find((x, i) => (x.id || i) === paymentId);
+      if (!p) return;
+      const payRef = p.paymentReference || ('PRF-' + paymentId);
+      if (p.statementTransactionId != null && Number(p.statementTransactionId) > 0) {
+        if (window.NavigationRouter && typeof window.NavigationRouter.selectNav === 'function') {
+          window.NavigationRouter.selectNav('view-bank-statement');
+        }
+        setTimeout(() => {
+          if (window.BankStatementController && typeof window.BankStatementController.highlightTxnRow === 'function') {
+            window.BankStatementController.highlightTxnRow(Number(p.statementTransactionId));
+          }
+        }, 300);
+      } else {
+        const user = p.createdBy || 'System';
+        const msg = `No Bank Statement entry exists for Payment Ref ${payRef} as it was settled manually by USER: ${user}`;
+        if (window.AppDialogService && typeof window.AppDialogService.warning === 'function') {
+          window.AppDialogService.warning('Manual Settlement Notice', payRef, msg);
+        } else if (window.AppDialogService && typeof window.AppDialogService.toastWarning === 'function') {
+          window.AppDialogService.toastWarning(msg);
+        } else {
+          alert(msg);
+        }
+      }
     },
 
     async viewHistoricalProof(paymentId, fileName) {

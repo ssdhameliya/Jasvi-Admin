@@ -348,8 +348,9 @@ window.BankStatementController = (function() {
           <td style="width:44px; min-width:44px; max-width:44px; text-align:center;" onclick="event.stopPropagation();">
             <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="window.BankStatementController.toggleSelectTxn(${t.id}, this.checked)">
           </td>
+          <td style="white-space:nowrap; font-family:monospace; font-weight:700; color:var(--cyan); font-size:0.76rem;">${t.statementReference || (currentBatch && currentBatch.statementReference) || ('BST/' + (t.importBatchId || currentBatchId || ''))}</td>
           <td style="white-space:nowrap; font-weight:600;">${formatDate(t.transactionDate)}</td>
-          <td style="white-space:nowrap; color:var(--text-muted); font-size:0.75rem;">${formatDate(t.valueDate || t.transactionDate)}</td>
+
           <td style="font-family:monospace; font-weight:600; color:var(--cyan); white-space:normal; word-break:break-all; line-height:1.3; padding:8px 10px;" title="${t.reference || ''}">
             ${t.reference || '-'}
           </td>
@@ -1938,7 +1939,12 @@ window.BankStatementController = (function() {
     // 1. Explicit multi-allocations if present
     if (Array.isArray(t.linkedAllocations) && t.linkedAllocations.length > 0) {
       t.linkedAllocations.forEach(a => {
+      t.linkedAllocations.forEach(a => {
         addTarget(a.documentNo || a.refNo || a.reference, a.targetType || a.documentType, a.allocatedAmount, a.roundingAdjustment, a.narration || a.notes);
+        if (a.paymentReference) {
+          addTarget(a.paymentReference, 'PAYMENT', a.allocatedAmount, 0, 'Payment Ref for ' + (a.documentNo || ''));
+        }
+      });
       });
     }
 
@@ -3017,7 +3023,7 @@ window.BankStatementController = (function() {
       }
     }
     // 9. Payment Receipt
-    else if (type === 'PAYMENT' || ref.startsWith('PAY') || ref.startsWith('REC')) {
+    else if (type === 'PAYMENT' || ref.startsWith('PRF') || ref.startsWith('PAY') || ref.startsWith('REC')) {
       if (window.NavigationRouter) window.NavigationRouter.selectNav('view-record-payment');
     }
     // 10. Fallback: inspect ref pattern
@@ -3127,13 +3133,21 @@ window.BankStatementController = (function() {
   }
 
   function downloadStandardBankTemplate(format = 'xlsx') {
+    if (format === 'all') {
+      downloadStandardBankTemplate('xlsx');
+      setTimeout(() => downloadStandardBankTemplate('xls'), 200);
+      setTimeout(() => downloadStandardBankTemplate('csv'), 400);
+      return;
+    }
     if (format === 'csv') {
-      const csvHeaders = 'Transaction Date *,Value Date,Description *,Reference / UTR,Amount *,Direction *,Balance';
+      const csvHeaders = 'Transaction Date *,Description *,Reference / UTR,Amount *,Direction *,Balance';
       const today = new Date().toISOString().slice(0, 10);
       const csvSample = [
-        `${today},${today},"NEFT CR - RELIANCE INDUSTRIES LTD - INV-SETTLEMENT",UTR98234710123,150000.00,CR,1250000.00`,
-        `${today},${today},"RTGS DR - TATA STEEL LTD - RAW MATERIAL VENDOR",UTR98234710456,85000.00,DR,1165000.00`,
-        `${today},${today},"UPI DR - VENDOR ADVANCE PAYMENT",UPI48291038472,24500.00,DR,1140500.00`
+        `${today},"NEFT CR - RELIANCE INDUSTRIES LTD - INV-SETTLEMENT",UTR98234710123,150000.00,CR,1250000.00`,
+        `${today},"RTGS DR - TATA STEEL LTD - RAW MATERIAL VENDOR",UTR98234710456,85000.00,DR,1165000.00`,
+        `${today},"UPI DR - VENDOR ADVANCE PAYMENT",UPI48291038472,24500.00,DR,1140500.00`
+
+
       ];
       const csvContent = '# JASVI INDUSTRIES ERP - STANDARD BANK STATEMENT TEMPLATE\n' +
         '# Mandatory columns: Transaction Date (YYYY-MM-DD or DD/MM/YYYY), Description, Amount (positive number), Direction (CR for deposit / DR for withdrawal)\n' +
@@ -3156,7 +3170,7 @@ window.BankStatementController = (function() {
 
     const headers = [
       'Transaction Date *',
-      'Value Date',
+
       'Description *',
       'Reference / UTR',
       'Amount *',
@@ -3166,9 +3180,9 @@ window.BankStatementController = (function() {
 
     const today = new Date().toISOString().slice(0, 10);
     const sampleRows = [
-      [today, today, 'NEFT CR - RELIANCE INDUSTRIES LTD - INV-SETTLEMENT', 'UTR98234710123', '150000.00', 'CR', '1250000.00'],
-      [today, today, 'RTGS DR - TATA STEEL LTD - RAW MATERIAL VENDOR', 'UTR98234710456', '85000.00', 'DR', '1165000.00'],
-      [today, today, 'UPI DR - VENDOR ADVANCE PAYMENT', 'UPI48291038472', '24500.00', 'DR', '1140500.00']
+      [today, 'NEFT CR - RELIANCE INDUSTRIES LTD - INV-SETTLEMENT', 'UTR98234710123', '150000.00', 'CR', '1250000.00'],
+      [today, 'RTGS DR - TATA STEEL LTD - RAW MATERIAL VENDOR', 'UTR98234710456', '85000.00', 'DR', '1165000.00'],
+      [today, 'UPI DR - VENDOR ADVANCE PAYMENT', 'UPI48291038472', '24500.00', 'DR', '1140500.00']
     ];
 
     const wb = XLSX.utils.book_new();
@@ -3221,7 +3235,7 @@ window.BankStatementController = (function() {
     wsInst['!cols'] = [{ wch: 34 }, { wch: 80 }];
     XLSX.utils.book_append_sheet(wb, wsInst, 'Instructions');
 
-    XLSX.writeFile(wb, 'Bank_Statement_Template.xlsx');
+    XLSX.writeFile(wb, format === 'xls' ? 'Bank_Statement_Template.xls' : 'Bank_Statement_Template.xlsx', format === 'xls' ? { bookType: 'biff8' } : undefined);
   }
 
   function onUniversalFileDrop(event) {

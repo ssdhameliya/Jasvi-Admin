@@ -1,14 +1,14 @@
 {
-    "desktopVersion": "11.0.22",
-    "webBuild": 18,
-    "webVersion": "11.0.22.02",
-    "tag": "web-v11.0.22.02",
-    "releaseDate": "2026-11-01T22:25:00+05:30",
+    "desktopVersion": "11.0.23",
+    "webBuild": 19,
+    "webVersion": "11.0.23.01",
+    "tag": "web-v11.0.23.01",
+    "releaseDate": "2026-11-02T00:20:00+05:30",
     "environment": "Production / Enterprise",
-    "summary": "v11.0.22.02 Enterprise Web Release: Fix RegisterUiSupport Escape Key Polymorphism & Bank Statement Import Modal Mounting",
+    "summary": "v11.0.23.01 Enterprise Web Release: Bank Statement Ref (BST/...), Payment Ref (PRF/...) 2-Way Deep-Linking, Purchase Recon Linkage & Multi-Format Templates",
     "highlights": [
-        "1. Register UI Escape Key Polymorphism: Fixed unhandled TypeError on Escape key press when drawer close callbacks are passed to installEscapeClose.",
-        "2. Bank Statement Import Modal DOM Mounting: Fixed premature closing div in bank-statement.html and enhanced ViewLoader to safely mount sibling DOM elements.",
-        "3. Instant Modal Responsiveness: Optimized Bank Statement import dialog to display immediately on user click while background account lookups load."
+        "1. Bank Statement & Purchase Recon Reference Parity: Added auto-generated Statement Ref (BST/DD-MM-YYYY/XXXX) column, removed redundant Value Date column, and updated Purchase Recon # Linked Ref to display and deep-link to BST/...",
+        "2. Payment Reference (PRF/DD-MM-YYYY/XXXX) & 2-Way Audit Linkage: Added clickable Payment Ref across Payment History, Bank Statement Match/Link, and UniversalLinkageService with 1-click Bank Statement isolation or manual settlement notice.",
+        "3. Multi-Format Template Downloads (.xlsx, .xls, .csv): Enabled downloading Bank Statement templates in .xlsx, .xls, .csv, or All 3 Formats simultaneously."
     ]
 }

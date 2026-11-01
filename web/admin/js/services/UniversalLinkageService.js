@@ -100,7 +100,7 @@
     },
 
     renderLinkageResults(data) {
-      const items = (data && data.items) || [];
+      const items = (data && (data.items || data.linkages)) || [];
       const isLinked = data && data.linked && items.length > 0;
 
       let totalAlloc = 0;
@@ -156,9 +156,7 @@
               ` : '<span style="color: var(--text-dim);">-</span>'}
             </td>
             <td style="white-space: nowrap;">
-              <span class="pill-badge pill-neutral clickable" onclick="window.UniversalLinkageService.openDocument('${it.targetType}', ${it.targetId}, '${docRef}')" title="Click to navigate to document" style="cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 600;">
-                <span>📄</span> ${docRef}
-              </span>
+              <span class="pill-badge pill-neutral clickable" onclick="window.UniversalLinkageService.openDocument('${it.targetType}', ${it.targetId}, '${docRef}')" title="Click to navigate to document" style="cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 600;"><span>📄</span> ${docRef}</span>${it.paymentReference ? `<span class="pill-badge pill-cyan clickable" onclick="window.UniversalLinkageService.openPayment('${it.targetType}', ${it.targetId}, '${docRef}')" title="Click to open Payment Record (${it.paymentReference})" style="cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 700; margin-left: 6px;"><span>💳</span> ${it.paymentReference}</span>` : ''}
             </td>
             <td style="white-space: nowrap; font-size: 0.78rem;">
               ${formatDate(it.transactionDate)}
@@ -205,6 +203,13 @@
         window.BankStatementController.openLinkedDocument(voucherNo || `VCH#${financeId}`, 'BANK_ENTRY', null, financeId);
       } else if (window.NavigationRouter && typeof window.NavigationRouter.selectNav === 'function') {
         window.NavigationRouter.selectNav('view-finance-register');
+      }
+    },
+
+    openPayment(type, id, docNo) {
+      this.closeModal();
+      if (window.RecordPaymentController && typeof window.RecordPaymentController.open === 'function') {
+        window.RecordPaymentController.open(type || 'SALE', id || 0, docNo || '-', '', 0, 0, 0);
       }
     },
 

@@ -242,7 +242,7 @@ window.PurchaseReconController = (function() {
       else if (status === 'REVIEW') badgeClass = 'pill-danger';
       else badgeClass = 'pill-neutral';
 
-      const linkedList = (r.bankLinks || []).map(b => b.financeVoucherNo || b.bankReference || ('STM-' + b.statementTransactionId)).filter(Boolean);
+      const linkedList = (r.bankLinks || []).map(b => b.bankReference || b.financeVoucherNo || ('STM-' + b.statementTransactionId)).filter(Boolean); const firstStmtId = (r.bankLinks && r.bankLinks[0] && r.bankLinks[0].statementTransactionId) || null;
       const linkedDisplay = linkedList.length > 0 ? linkedList.join(', ') : (r.linkedRef || '-');
       const firstLink = linkedList.length > 0 ? linkedList[0] : '';
 
@@ -253,7 +253,7 @@ window.PurchaseReconController = (function() {
           <td style="font-weight:600; color:var(--text-main);">${r.supplierName || '-'}</td>
           <td class="amount-cyan" style="text-align:right; font-weight:700; color:var(--cyan);">${formatMoney(invVal)}</td>
           <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.75rem; color:var(--cyan);" title="${linkedDisplay}">
-            ${firstLink ? `<span class="pill-badge pill-neutral" style="cursor:pointer; color:var(--cyan); border:1px solid rgba(56,189,248,0.3);" onclick="event.stopPropagation(); window.PurchaseReconController.openLinkedBankEntry('${firstLink}', ${r.id})">${linkedDisplay}</span>` : '-'}
+            ${firstLink ? `<span class="pill-badge pill-neutral" style="cursor:pointer; color:var(--cyan); border:1px solid rgba(56,189,248,0.3);" onclick="event.stopPropagation(); window.PurchaseReconController.openLinkedBankEntry('${firstLink}', ${r.id}, ${firstStmtId || 'null'})">${linkedDisplay}</span>` : '-'}
           </td>
           <td class="${balance > 0 ? 'amount-yellow' : 'amount-green'}" style="text-align:right; font-weight:700; color:${balance > 0 ? 'var(--yellow)' : 'var(--green)'};">
             ${formatMoney(balance)}
@@ -1289,7 +1289,19 @@ window.PurchaseReconController = (function() {
     document.querySelectorAll('#recon-supplier-tbody tr.active-selected-row').forEach(r => r.classList.remove('active-selected-row'));
   }
 
-  function openLinkedBankEntry(ref, reconId) {
+  function openLinkedBankEntry(ref, reconId, stmtId = null) {
+    if (!ref || ref === '-') return;
+    if (stmtId != null && Number(stmtId) > 0) {
+      if (window.NavigationRouter) window.NavigationRouter.selectNav('view-bank-statement');
+      setTimeout(() => {
+        if (window.BankStatementController && typeof window.BankStatementController.highlightTxnRow === 'function') {
+          window.BankStatementController.highlightTxnRow(Number(stmtId));
+        } else if (window.BankStatementController && typeof window.BankStatementController.highlightTxn === 'function') {
+          window.BankStatementController.highlightTxn(Number(stmtId));
+        }
+      }, 300);
+      return;
+    }
     if (!ref || ref === '-') return;
     if (window.DeepLinkService && typeof window.DeepLinkService.navigateToDocument === 'function') {
       window.DeepLinkService.navigateToDocument(ref);
