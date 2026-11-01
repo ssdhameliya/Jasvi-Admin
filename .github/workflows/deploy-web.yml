@@ -1,4 +1,4 @@
-name: Deploy Web Showcase & Portals
+name: Deploy Jasvi Web Admin Studio
 
 on:
   push:
@@ -98,8 +98,6 @@ jobs:
 
       - name: Verify Live UAT Endpoints
         run: |
-          UAT_WEB=$(curl -fsSL https://web-uat.jasviindustries.in)
-          echo "$UAT_WEB" | grep -q "Jasvi Industries"
           UAT_ERP=$(curl -fsSL https://erp-uat.jasviindustries.in)
           echo "$UAT_ERP" | grep -q "Jasvi Industries ERP"
           READY=0
@@ -114,14 +112,16 @@ jobs:
             echo "UAT backend runtime did not report ready within 40s"
             exit 1
           fi
-          echo "UAT Showcase, Admin Studio, and Backend Runtime verified and LIVE!"
+          echo "UAT Web Admin Studio and Backend Runtime verified and LIVE!"
 
   deploy-prod:
     name: 2. Deploy to Production Environment (After UAT)
     needs: deploy-uat
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'uat-then-prod'
+      startsWith(github.ref, 'refs/tags/web-v') ||
+      github.ref == 'refs/heads/main' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.target == 'uat-then-prod')
     timeout-minutes: 10
     steps:
       - name: Checkout Repository
@@ -191,10 +191,6 @@ jobs:
 
       - name: Verify Live PROD Endpoints
         run: |
-          PROD_WEB=$(curl -fsSL https://jasviindustries.in)
-          echo "$PROD_WEB" | grep -q "Jasvi Industries"
-          PROD_WWW=$(curl -fsSL https://www.jasviindustries.in)
-          echo "$PROD_WWW" | grep -q "Jasvi Industries"
           PROD_ERP=$(curl -fsSL https://erp.jasviindustries.in)
           echo "$PROD_ERP" | grep -q "Jasvi Industries ERP"
           READY=0
@@ -209,4 +205,4 @@ jobs:
             echo "PROD backend runtime did not report ready within 40s"
             exit 1
           fi
-          echo "PROD Showcase, Admin Studio, and Backend Runtime verified and LIVE!"
+          echo "PROD Web Admin Studio and Backend Runtime verified and LIVE!"
