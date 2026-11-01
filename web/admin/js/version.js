@@ -3,19 +3,19 @@
  * Automatically synchronized with version.json and Desktop release revision.
  */
 window.AppVersion = window.DSE_VERSION = {
-  version: "11.0.20.01",
-  desktopVersion: "11.0.20",
-  webBuild: 14,
-  webVersion: "11.0.20.01",
-  tag: "web-v11.0.20.01",
-  releaseDate: "2026-11-01T14:05:00+05:30",
+  version: "11.0.21.01",
+  desktopVersion: "11.0.21",
+  webBuild: 15,
+  webVersion: "11.0.21.01",
+  tag: "web-v11.0.21.01",
+  releaseDate: "2026-11-01T15:15:00+05:30",
   environment: "Production / Enterprise",
-  summary: "v11.0.20.01 Enterprise Web Release: Standardize Reference Formats, FY Tokens, Global Sync & Dynamic Colour-Coded Excel Templates",
+  summary: "v11.0.21.01 Enterprise Web Release: Excel Template In-Cell Dropdowns, Sales/Purchase Attachment Parity, Settings Document Numbering & Double Confirmation",
   highlights: [
-    "1. Financial Year Reference Tokens: Full support for {YY-YYYY}, {YYYY-YYYY}, {YYYY-YY}, and {YY-YY} with Indian financial year calendar logic.",
-    "2. Global Format Synchronization: Added ⇄ Sync All Formats modal in Masters to update all document reference formats at once with live multi-document preview.",
-    "3. Dynamic & Colour-Coded Excel Templates: Downloadable import templates now dynamically resolve sample identifiers from active formats and feature color-coded headers (Red=Mandatory, Amber=Tax, Blue=Charges, Gray=Optional).",
-    "4. Multiple Sales Charges: Added full support for additional_charges on Sales import identical to Purchases."
+    "1. Settings Document Numbering: Added dedicated card in Screen 3 (Invoice & Delivery) with token guidance info modal and 4-point impact double-confirmation.",
+    "2. Excel Import In-Cell Dropdowns: Native Excel dropdowns for gst_percent, gst_type, charge types, and taxable flags streamed via server endpoint.",
+    "3. Template Dynamic Samples: Sales and Purchases sample rows dynamically reflect active reference formats for party and item codes.",
+    "4. Attachment & Charges Parity: Consolidated to single attachment_files column with backward-compatible fallback across Sales and Purchases, plus charge deduplication."
   ]
 };
 
@@ -66,7 +66,7 @@ window.AppVersion = window.DSE_VERSION = {
 
     // 5. Document Title
     if (document.title && !document.title.includes(v.webVersion)) {
-      document.title = `${document.title.split(' — ')[0]} — Jasvi Industries ERP v${v.webVersion}`;
+      document.title = `${document.title.split(' • ')[0]} • Jasvi Industries ERP v${v.webVersion}`;
     }
   }
 

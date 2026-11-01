@@ -617,6 +617,49 @@
 (4) Payments to be made by payees A/c Chque / DD / RTGS / NEFT Only.</textarea>
                 </div>
 
+                <!-- Sub-section: Document Numbering & Reference Formats (Parity with Masters & InvoiceSettingsPanel.fxml) -->
+                <div class="data-panel"
+                  style="background:rgba(15,23,42,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:18px 20px; margin-bottom:20px;">
+                  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="color:#38bdf8; font-size:1.05rem;">&#128221;</span>
+                      <h3
+                        style="font-size:0.92rem; font-weight:700; color:#ffffff; margin:0; font-family:'Space Grotesk',sans-serif;">
+                        Document Numbering &amp; Reference Formats</h3>
+                      <button type="button" class="btn btn-icon" onclick="window.SettingsController.showRefFormatInfoModal()"
+                        title="How Reference Formats Work &amp; Token Guide"
+                        style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.3); color:#38bdf8; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem; cursor:pointer; padding:0;">
+                        &#8505;&#65039;
+                      </button>
+                    </div>
+                    <span class="badge"
+                      style="background:rgba(52,211,153,0.15); color:#34d399; border:1px solid rgba(52,211,153,0.3); font-size:0.7rem; padding:3px 8px; border-radius:4px; font-weight:600;">Standardized Pattern</span>
+                  </div>
+                  <div style="font-size:0.72rem; color:#94a3b8; margin-bottom:14px;">
+                    Configure global numbering conventions across Sales Invoices, Purchase Bills, Customers, Suppliers, and Items. Changing reference formatting applies exclusively to subsequent documents while preserving audit integrity.
+                  </div>
+
+                  <div
+                    style="display:grid; grid-template-columns: 2fr 1fr; gap:16px; align-items:center; background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.05); border-radius:6px; padding:12px 14px;">
+                    <div>
+                      <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px;">Active Document Format Scheme</div>
+                      <div style="font-family:monospace; font-size:0.85rem; color:#38bdf8; font-weight:700;"
+                        id="setting-ref-format-summary">
+                        PREFIX / DD-MM-YYYY / XXXX (e.g., IN/01-11-2026/0001)
+                      </div>
+                      <div style="font-size:0.68rem; color:#64748b; margin-top:2px;">
+                        Supported Tokens: FY (YY-YYYY, YYYY-YY), Date (DD-MM-YYYY), Sequence (XXXX)
+                      </div>
+                    </div>
+                    <div style="display:flex; justify-content:flex-end; gap:8px;">
+                      <button type="button" class="btn btn-secondary" onclick="window.SettingsController.openRefFormatSyncModal()"
+                        style="font-size:0.75rem; font-weight:600; padding:6px 14px; border-color:rgba(56,189,248,0.4); color:#38bdf8;">
+                        <span>&#9881;&#65039;</span> Change Format Scheme
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Sub-section: Branding, Logo & Signature -->
                 <div
                   style="background:rgba(15,23,42,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:8px; padding:18px 20px;">

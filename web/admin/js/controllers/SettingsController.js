@@ -869,8 +869,58 @@ window.SettingsController = (function() {
 
         const sealVal = invoiceSettings['company.signaturePath'] || invoiceSettings['invoice.digital.seal'];
         setAssetPreview('preview-invoice-seal', 'placeholder-invoice-seal', sealVal, null, 'status-invoice-seal', 'company.signaturePath');
+
+        try {
+          if (window.MasterService && typeof window.MasterService.getReferenceFormats === 'function') {
+            const refFormats = await window.MasterService.getReferenceFormats();
+            const salesFmt = (refFormats && refFormats.REF_SALES) || 'IN/DD-MM-YYYY/XXXX';
+            const sumEl = document.getElementById('setting-ref-format-summary');
+            if (sumEl) {
+              const sample = window.MasterDataController && typeof window.MasterDataController.formatSampleRef === 'function'
+                ? window.MasterDataController.formatSampleRef(salesFmt, 1, new Date())
+                : salesFmt;
+              sumEl.innerText = `${salesFmt} (e.g., ${sample})`;
+            }
+          }
+        } catch (refErr) {}
       } catch (err) {
         console.error('[SettingsController] Failed to load invoice settings:', err);
+      }
+    },
+
+    showRefFormatInfoModal() {
+      const modal = document.getElementById('modal-ref-format-info');
+      if (modal) modal.style.display = 'flex';
+    },
+
+    closeRefFormatInfoModal() {
+      const modal = document.getElementById('modal-ref-format-info');
+      if (modal) modal.style.display = 'none';
+    },
+
+    openRefFormatSyncModal() {
+      const modal = document.getElementById('modal-confirm-ref-format-change');
+      if (modal) {
+        const chk = document.getElementById('chk-confirm-ref-format');
+        if (chk) chk.checked = false;
+        const btn = document.getElementById('btn-confirm-ref-format-proceed');
+        if (btn) btn.disabled = true;
+        modal.style.display = 'flex';
+      }
+    },
+
+    closeRefFormatConfirmModal() {
+      const modal = document.getElementById('modal-confirm-ref-format-change');
+      if (modal) modal.style.display = 'none';
+    },
+
+    proceedToRefFormatSync() {
+      this.closeRefFormatConfirmModal();
+      if (window.MasterDataController && typeof window.MasterDataController.openSyncAllRefFormatsModal === 'function') {
+        window.MasterDataController.openSyncAllRefFormatsModal();
+      } else {
+        const m = document.getElementById('modal-sync-ref-formats');
+        if (m) m.style.display = 'flex';
       }
     },
 

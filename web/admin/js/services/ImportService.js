@@ -30,14 +30,14 @@ window.ImportService = (function() {
     'payment_terms', 'paid_amount', 'remarks',
     'charge_1_type', 'charge_1_amount', 'charge_1_taxable', 'charge_1_gst_percent',
     'charge_2_type', 'charge_2_amount', 'charge_2_taxable', 'charge_2_gst_percent',
-    'additional_charges', 'attachment_file', 'attachment_files'
+    'additional_charges', 'attachment_files'
   ];
   const SALES_DOCUMENT_FIELDS = [
     'invoice_no', 'invoice_date', 'party_code', 'item_code', 'quantity', 'rate', 'gst_percent', 'gst_type',
     'payment_terms', 'paid_amount', 'remarks',
     'charge_1_type', 'charge_1_amount', 'charge_1_taxable', 'charge_1_gst_percent',
     'charge_2_type', 'charge_2_amount', 'charge_2_taxable', 'charge_2_gst_percent',
-    'additional_charges', 'attachment_file', 'attachment_files'
+    'additional_charges', 'attachment_files'
   ];
   const MASTER_FIELDS = [
     'category_code', 'category_name', 'category_description', 'value_code', 'value', 'value_description', 'display_order', 'is_active'
@@ -162,13 +162,13 @@ window.ImportService = (function() {
         ];
       case 'Sales':
         return [
-          [getSampleId('REF_SALES', 'IN/DD-MM-YYYY/XXXX', 1), today, 'CUS-0001', 'ITEM-0001', '2', '1500', '18', 'GST', '15 Days', '0', 'Sample intra-state sale with optional charges', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', '', ''],
-          [getSampleId('REF_SALES', 'IN/DD-MM-YYYY/XXXX', 2), today, 'CUS-0002', 'ITEM-0001', '1', '2000', '18', 'IGST', '15 Days', '0', 'Sample inter-state sale; multiple attachments optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', '', 'invoice.pdf;delivery-receipt.pdf']
+          [getSampleId('REF_SALES', 'IN/DD-MM-YYYY/XXXX', 1), today, getSampleId('REF_CUSTOMER', 'CUSXXX', 1), getSampleId('REF_ITEM', 'ITMXXX', 1), '2', '1500', '18', 'GST', '15 Days', '0', 'Sample intra-state sale with optional charges', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', ''],
+          [getSampleId('REF_SALES', 'IN/DD-MM-YYYY/XXXX', 2), today, getSampleId('REF_CUSTOMER', 'CUSXXX', 2), getSampleId('REF_ITEM', 'ITMXXX', 1), '1', '2000', '18', 'IGST', '15 Days', '0', 'Sample inter-state sale; multiple attachments optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', 'invoice.pdf;delivery-receipt.pdf']
         ];
       case 'Purchases':
         return [
-          [getSampleId('REF_PURCHASE', 'PUR/DD-MM-YYYY/XXXX', 1), today, 'SUP-0001', 'ITEM-0001', '10', '1200', '18', 'GST', '15 Days', '0', 'Sample intra-state purchase with unlimited charge syntax', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', '', ''],
-          [getSampleId('REF_PURCHASE', 'PUR/DD-MM-YYYY/XXXX', 2), today, 'SUP-0002', 'ITEM-0001', '5', '1200', '18', 'IGST', '15 Days', '0', 'Sample inter-state purchase; multiple attachments are optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', '', 'invoice.pdf;quality-certificate.pdf']
+          [getSampleId('REF_PURCHASE', 'PUR/DD-MM-YYYY/XXXX', 1), today, getSampleId('REF_SUPPLIER', 'SUPXXX', 1), getSampleId('REF_ITEM', 'ITMXXX', 1), '10', '1200', '18', 'GST', '15 Days', '0', 'Sample intra-state purchase with unlimited charge syntax', 'Freight', '250', 'true', '18', 'Packing', '100', 'false', '0', 'Insurance|75|true|18;Handling|50|false|0', ''],
+          [getSampleId('REF_PURCHASE', 'PUR/DD-MM-YYYY/XXXX', 2), today, getSampleId('REF_SUPPLIER', 'SUPXXX', 2), getSampleId('REF_ITEM', 'ITMXXX', 1), '5', '1200', '18', 'IGST', '15 Days', '0', 'Sample inter-state purchase; multiple attachments are optional', '', '', '', '', '', '', '', '', 'Freight|250|true|18', 'invoice.pdf;quality-certificate.pdf']
         ];
       case 'Master Categories and Values':
       case 'Master Categories & Values':
@@ -470,7 +470,25 @@ window.ImportService = (function() {
     }
   }
 
-  function downloadTemplate(moduleName) {
+  async function downloadTemplate(moduleName) {
+    try {
+      const resp = await fetch(`/api/master/import/template/${encodeURIComponent(moduleName)}`);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const safeModule = moduleName.replace(/[^A-Za-z0-9]+/g, '_');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeModule}_Template.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        return;
+      }
+    } catch (backendErr) {
+      // Backend template streaming not available; proceed to client-side SheetJS fallback
+    }
     const fields = getModuleFields(moduleName);
     const examples = getExampleRows(moduleName);
     const company = (window.AuthService && window.AuthService.getCurrentUser()?.company) || 'Jasvi Industries Pvt Ltd';
@@ -785,6 +803,23 @@ window.ImportService = (function() {
   }
   const parseAdditionalPurchaseCharges = parseAdditionalCharges;
 
+  function mergeAndDeduplicateCharges(standardCharges, additionalCharges) {
+    const list = [...(standardCharges || []), ...(additionalCharges || [])];
+    const result = [];
+    const seen = new Set();
+    for (const c of list) {
+      if (!c) continue;
+      const typeKey = (c.chargeType || '').trim().toUpperCase();
+      const amtKey = (Number(c.amount) || 0).toFixed(2);
+      const compositeKey = `${typeKey}|${amtKey}`;
+      if (!seen.has(compositeKey)) {
+        seen.add(compositeKey);
+        result.push(c);
+      }
+    }
+    return result;
+  }
+
   function calculateDocumentTotals(lines, charges) {
     let gross = 0;
     let discount = 0;
@@ -1040,9 +1075,10 @@ window.ImportService = (function() {
         // Validate document charges (Desktop parity)
         if (!rowError) {
           try {
-            parseDocumentCharges(groupRows.map(g => g.row), getVal);
+            const stdC = parseDocumentCharges(groupRows.map(g => g.row), getVal);
             const flex = getVal(firstRow, 'additional_charges');
-            if (flex) parseAdditionalCharges(flex);
+            const addC = flex ? parseAdditionalCharges(flex) : [];
+            mergeAndDeduplicateCharges(stdC, addC);
           } catch (chargeErr) {
             rowError = chargeErr.message;
           }
@@ -1577,11 +1613,10 @@ window.ImportService = (function() {
             });
 
             // Extract charges and calculate totals with charges (Desktop parity)
-            const charges = parseDocumentCharges(gRows.map(g => g.row), getVal);
+            const stdCharges = parseDocumentCharges(gRows.map(g => g.row), getVal);
             const additionalText = getVal(first, 'additional_charges');
-            if (additionalText) {
-              charges.push(...parseAdditionalCharges(additionalText));
-            }
+            const addCharges = additionalText ? parseAdditionalCharges(additionalText) : [];
+            const charges = mergeAndDeduplicateCharges(stdCharges, addCharges);
             const totals = calculateDocumentTotals(lines, charges);
             const totalQty = lines.reduce((acc, l) => acc + (l.quantity || 0), 0);
             const paymentTerms = getVal(first, 'payment_terms') || '15 Days';
@@ -1635,7 +1670,7 @@ window.ImportService = (function() {
               transporterGstin: '',
               chargeType: charges.length > 0 ? (charges[0].chargeType || '') : '',
               chargeAmount: charges.length > 0 ? (charges[0].amount || 0.0) : 0.0,
-              attachmentPath: null,
+              attachmentPath: getVal(first, 'attachment_files') || getVal(first, 'attachment_file') || null,
               charges: charges,
               lines: lines,
               rowVersion: 0
@@ -1736,11 +1771,10 @@ window.ImportService = (function() {
             });
 
             // Extract charges and calculate totals with charges (Desktop parity)
-            const charges = parseDocumentCharges(gRows.map(g => g.row), getVal);
+            const stdCharges = parseDocumentCharges(gRows.map(g => g.row), getVal);
             const additionalText = getVal(first, 'additional_charges');
-            if (additionalText) {
-              charges.push(...parseAdditionalPurchaseCharges(additionalText));
-            }
+            const addCharges = additionalText ? parseAdditionalPurchaseCharges(additionalText) : [];
+            const charges = mergeAndDeduplicateCharges(stdCharges, addCharges);
             const totals = calculateDocumentTotals(lines, charges);
             const totalQty = lines.reduce((acc, l) => acc + (l.quantity || 0), 0);
             const paymentTerms = getVal(first, 'payment_terms') || '15 Days';
@@ -1785,7 +1819,7 @@ window.ImportService = (function() {
               transporterGstin: '',
               lrAwbNo: '',
               discountType: 'PERCENT',
-              attachmentPath: null,
+              attachmentPath: getVal(first, 'attachment_files') || getVal(first, 'attachment_file') || null,
               createdBy: 'IMPORT',
               deliveryDate: null,
               vehicleNumber: '',

@@ -909,7 +909,16 @@ window.MasterDataController = (function() {
       const delim = delimEl ? delimEl.value : '/';
       const seqLen = parseInt(seqEl ? seqEl.value : '4', 10) || 4;
 
-      const confirmMsg = `Are you sure you want to standardize all document reference formats?\n\nPattern: ${pattern}\nDelimiter: ${delim}\nSequence: ${seqLen} digits\n\nThis will synchronize Sales, Purchases, Customers, Suppliers, Items, Quotations, Returns, Payments, and Journal Vouchers.`;
+      const confirmMsg = `DOUBLE CONFIRMATION: Are you sure you want to standardize all document reference formats?\n\n` +
+        `New Pattern: ${pattern}\n` +
+        `Delimiter: ${delim}\n` +
+        `Sequence: ${seqLen} digits (e.g., XXXX)\n\n` +
+        `KEY IMPACT ANALYSIS:\n` +
+        `1. Historical Integrity: All existing invoices, purchase vouchers, and master records remain permanently unchanged.\n` +
+        `2. Future Sequences: Only subsequent documents will generate with this new sequence scheme.\n` +
+        `3. Excel Templates: Import templates will dynamically reflect the new format in sample party and item codes.\n` +
+        `4. Statutory Compliance: Make sure your document number format does not exceed 16 characters for GST compliance.\n\n` +
+        `Do you want to proceed and apply this format across all document types?`;
       if (!confirm(confirmMsg)) return;
 
       try {

@@ -6611,6 +6611,158 @@
     </div>
   </div>
 
+  <!-- REFERENCE FORMAT INFO & TOKEN GUIDE MODAL -->
+  <div class="modal-overlay" id="modal-ref-format-info" style="display: none;">
+    <div class="modal-box" style="max-width: 650px; width: 100%; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #38bdf8; font-size: 1.2rem;">&#8505;&#65039;</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.1rem; color: #fff;">Document Reference Formats Guide</h3>
+            <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-muted);">How deterministic auto-numbering, tokens, and sequences work</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="window.SettingsController.closeRefFormatInfoModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 18px;">
+        <div style="padding: 12px 14px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; margin-bottom: 16px; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+          <strong style="color: #38bdf8;">Purpose:</strong> Reference formats dictate how new document numbers and entity codes are generated across the ERP (Sales Invoices, Purchase Bills, Customers, Suppliers, Items, Quotations, Returns, Payments, and Journal Vouchers).
+        </div>
+
+        <h4 style="font-size: 0.85rem; color: #fff; margin: 0 0 8px 0; font-weight: 700;">Supported Formatting Tokens</h4>
+        <div style="border: 1px solid var(--border-subtle); border-radius: 6px; overflow: hidden; margin-bottom: 16px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+            <thead>
+              <tr style="background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid var(--border-subtle); text-align: left;">
+                <th style="padding: 8px 10px; color: var(--text-muted); font-weight: 600;">TOKEN</th>
+                <th style="padding: 8px 10px; color: var(--text-muted); font-weight: 600;">NAME / FORMAT</th>
+                <th style="padding: 8px 10px; color: var(--text-muted); font-weight: 600;">SAMPLE OUTPUT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">YY-YYYY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Indian FY (2-digit start, 4-digit end)</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/24-2025/0001</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">YYYY-YYYY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Indian FY (4-digit start, 4-digit end)</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/2024-2025/0001</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">YYYY-YY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Indian FY (4-digit start, 2-digit end)</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/2024-25/0001</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">YY-YY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Indian FY (2-digit start, 2-digit end)</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/24-25/0001</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">DD-MM-YYYY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Pure Indian Calendar Date (Day-Month-Year)</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/01-11-2026/0001</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">MM-YYYY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Month and 4-digit Year</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/11-2026/0001</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 8px 10px; font-family: monospace; color: #38bdf8; font-weight: bold;">YYYY</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">4-digit Calendar Year</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">IN/2026/0001</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 10px; font-family: monospace; color: #fbbf24; font-weight: bold;">XXXX / XXX</td>
+                <td style="padding: 8px 10px; color: #e2e8f0;">Zero-padded sequential counter</td>
+                <td style="padding: 8px 10px; font-family: monospace; color: #34d399;">0001, 0002, 0003...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="font-size: 0.85rem; color: #fff; margin: 0 0 8px 0; font-weight: 700;">Key Rules &amp; Best Practices</h4>
+        <ul style="margin: 0; padding-left: 20px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.6;">
+          <li><strong>GST Rule Compliance:</strong> Under Indian GST Rule 46(b), tax invoice numbers should not exceed 16 characters. Patterns like <code style="color:#38bdf8;">IN/24-25/XXXX</code> (14 chars) or <code style="color:#38bdf8;">IN/DD-MM-YYYY/XXXX</code> adhere cleanly.</li>
+          <li><strong>Prefix Preservation:</strong> Standardizing reference formats preserves category prefixes (<code style="color:#38bdf8;">IN</code> for Sales, <code style="color:#38bdf8;">PUR</code> for Purchases, <code style="color:#34d399;">CUS</code> for Customer, <code style="color:#fbbf24;">ITM</code> for Item).</li>
+          <li><strong>Sequential Progression:</strong> The sequential counter increments independently per document category and resets gracefully upon new financial periods.</li>
+        </ul>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; padding: 12px 16px; border-top: 1px solid var(--border-subtle);">
+        <button type="button" class="btn btn-primary" onclick="window.SettingsController.closeRefFormatInfoModal()">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOUBLE CONFIRMATION MODAL (IMPACT ANALYSIS) -->
+  <div class="modal-overlay" id="modal-confirm-ref-format-change" style="display: none;">
+    <div class="modal-box" style="max-width: 580px; width: 100%; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(245, 158, 11, 0.3);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: #f59e0b; font-size: 1.25rem;">&#9888;&#65039;</span>
+          <div>
+            <h3 style="margin: 0; font-size: 1.1rem; color: #f59e0b;">Double Confirmation Required</h3>
+            <p style="margin: 2px 0 0; font-size: 0.75rem; color: var(--text-muted);">Please review the operational and statutory impact of modifying reference formats</p>
+          </div>
+        </div>
+        <button class="modal-close" onclick="window.SettingsController.closeRefFormatConfirmModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 18px;">
+        <div style="padding: 12px 14px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; margin-bottom: 16px; font-size: 0.8rem; color: #fde68a; line-height: 1.5;">
+          <strong>Attention:</strong> Changing document reference numbering patterns changes how invoice numbers, customer IDs, and inventory codes are constructed. Before applying this change, verify the 4 impact points below:
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; font-size: 0.78rem;">
+          <div style="display: flex; gap: 10px; background: rgba(15, 23, 42, 0.5); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+            <span style="color: #34d399; font-size: 1rem;">&#10003;</span>
+            <div>
+              <strong style="color: #fff;">1. Historical Invoices &amp; Records Retained (Zero Mutation)</strong>
+              <div style="color: var(--text-muted); margin-top: 2px;">All existing invoices, purchase vouchers, and customer codes remain immutable. Previous documents are permanently locked for statutory and tax audit compliance.</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; background: rgba(15, 23, 42, 0.5); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+            <span style="color: #38bdf8; font-size: 1rem;">&#10145;</span>
+            <div>
+              <strong style="color: #fff;">2. Future Sequences &amp; Next Codes Affected</strong>
+              <div style="color: var(--text-muted); margin-top: 2px;">The newly configured scheme applies immediately to the next document created. For example, next invoice transitions to the new pattern seamlessly.</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; background: rgba(15, 23, 42, 0.5); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+            <span style="color: #a78bfa; font-size: 1rem;">&#128196;</span>
+            <div>
+              <strong style="color: #fff;">3. Excel Import Templates Dynamically Synchronized</strong>
+              <div style="color: var(--text-muted); margin-top: 2px;">All newly generated Excel templates (Sales, Purchases, Customers, Items) will automatically provide sample codes adhering to this updated scheme.</div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; background: rgba(15, 23, 42, 0.5); padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-subtle);">
+            <span style="color: #fbbf24; font-size: 1rem;">&#128220;</span>
+            <div>
+              <strong style="color: #fff;">4. GST &amp; E-Way Bill Character Length Limit</strong>
+              <div style="color: var(--text-muted); margin-top: 2px;">Ensure your chosen pattern does not exceed 16 alphanumeric characters to maintain 100% compliance with Indian GST E-Invoicing &amp; E-Way Bill validation portals.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding: 10px 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 6px;">
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.78rem; color: #e2e8f0; cursor: pointer;">
+            <input type="checkbox" id="chk-confirm-ref-format" onchange="document.getElementById('btn-confirm-ref-format-proceed').disabled = !this.checked;" style="margin-top: 2px;">
+            <span>I have reviewed the 4 operational and statutory impacts above and confirm I want to reconfigure ERP document reference numbering.</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border-subtle);">
+        <button type="button" class="btn btn-secondary" onclick="window.SettingsController.closeRefFormatConfirmModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-confirm-ref-format-proceed" disabled onclick="window.SettingsController.proceedToRefFormatSync()" style="background: #f59e0b; border-color: #d97706; color: #000; font-weight: 700;">Proceed to Formatting Configuration &rarr;</button>
+      </div>
+    </div>
+  </div>
+
   <!-- UNIFIED BANK & EXPENSE ENTRY MODAL (BankExpense.fxml PARITY) -->
   <div class="modal-overlay" id="modal-finance-entry" style="display: none;">
     <div class="modal-box"
