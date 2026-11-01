@@ -897,6 +897,7 @@ window.MasterDataController = (function() {
       setPrev('sync-preview-supplier', 'SUP');
       setPrev('sync-preview-item', 'ITM');
       setPrev('sync-preview-journal', 'JV');
+      setPrev('sync-preview-category', 'CAT');
     },
 
     async submitSyncAllRefFormats() {
@@ -908,11 +909,12 @@ window.MasterDataController = (function() {
       const pattern = patEl.value || 'DD-MM-YYYY';
       const delim = delimEl ? delimEl.value : '/';
       const seqLen = parseInt(seqEl ? seqEl.value : '4', 10) || 4;
+      const seqMask = 'X'.repeat(seqLen);
 
       const confirmMsg = `DOUBLE CONFIRMATION: Are you sure you want to standardize all document reference formats?\n\n` +
         `New Pattern: ${pattern}\n` +
         `Delimiter: ${delim}\n` +
-        `Sequence: ${seqLen} digits (e.g., XXXX)\n\n` +
+        `Sequence: ${seqLen} digits (e.g., ${seqMask})\n\n` +
         `KEY IMPACT ANALYSIS:\n` +
         `1. Historical Integrity: All existing invoices, purchase vouchers, and master records remain permanently unchanged.\n` +
         `2. Future Sequences: Only subsequent documents will generate with this new sequence scheme.\n` +
@@ -922,7 +924,7 @@ window.MasterDataController = (function() {
       if (!confirm(confirmMsg)) return;
 
       try {
-        await window.MasterService.syncAllReferenceFormats(pattern, delim, seqLen);
+        await window.MasterService.syncAllReferenceFormats(pattern, delim, seqMask);
         this.closeSyncAllRefFormatsModal();
         if (window.AudioSynthesizer && typeof window.AudioSynthesizer.playSuccess === 'function') {
           window.AudioSynthesizer.playSuccess();

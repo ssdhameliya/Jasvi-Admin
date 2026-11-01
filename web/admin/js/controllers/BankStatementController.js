@@ -3012,6 +3012,679 @@ window.BankStatementController = (function() {
     }
   }
 
+  
+  // ==========================================
+  // UNIVERSAL BANK STATEMENT INGESTION & TEMPLATE ENGINE
+  // Multi-Bank Auto-Detection (.xlsx, .xls, .csv), Pre-Validation & ERP Loading
+  // ==========================================
+
+  let universalParsedResult = null;
+  let universalFileName = '';
+
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function openUniversalImportModal() {
+    const modal = document.getElementById('modal-universal-bank-import');
+    if (!modal) return;
+
+    universalParsedResult = null;
+    universalFileName = '';
+
+    const fileInput = document.getElementById('mubi-file-input');
+    if (fileInput) fileInput.value = '';
+
+    const fileMeta = document.getElementById('mubi-file-meta');
+    if (fileMeta) fileMeta.style.display = 'none';
+
+    const metricsBar = document.getElementById('mubi-metrics-bar');
+    if (metricsBar) metricsBar.style.display = 'none';
+
+    const tableContainer = document.getElementById('mubi-table-container');
+    if (tableContainer) tableContainer.style.display = 'none';
+
+    const tbody = document.getElementById('mubi-table-body');
+    if (tbody) tbody.innerHTML = '';
+
+    const confirmBtn = document.getElementById('mubi-btn-confirm');
+    if (confirmBtn) {
+      confirmBtn.setAttribute('disabled', 'true');
+      confirmBtn.style.opacity = '0.5';
+      confirmBtn.style.cursor = 'not-allowed';
+    }
+
+    const footerStatus = document.getElementById('mubi-footer-status');
+    if (footerStatus) {
+      footerStatus.style.color = 'var(--text-dim)';
+      footerStatus.innerHTML = 'Please select or drag a bank statement file to inspect and validate.';
+    }
+
+    await populateUniversalBankAccountDropdown();
+    modal.style.display = 'flex';
+  }
+
+  function closeUniversalImportModal() {
+    const modal = document.getElementById('modal-universal-bank-import');
+    if (modal) modal.style.display = 'none';
+  }
+
+  async function populateUniversalBankAccountDropdown() {
+    const select = document.getElementById('mubi-bank-account');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Loading master bank accounts...</option>';
+    let accounts = [];
+
+    try {
+      if (window.MasterService) {
+        accounts = await window.MasterService.getLookupsByCategoryCode('BANK_ACCOUNT').catch(() => []);
+        if (!Array.isArray(accounts) || accounts.length === 0) {
+          accounts = await window.MasterService.getLookups('BANK_ACCOUNT').catch(() => []);
+        }
+      }
+      if ((!accounts || accounts.length === 0) && window.ApiService) {
+        accounts = await window.ApiService.get('/api/master/lookups/by-category-code?code=BANK_ACCOUNT').catch(() => []);
+      }
+    } catch (e) {
+      console.warn('Failed to load bank accounts for modal:', e);
+    }
+
+    const validAccounts = Array.isArray(accounts)
+      ? accounts.filter(l => l.active !== false && (l.lookupValue || l.value || l.lookupCode))
+      : [];
+
+    if (validAccounts.length === 0) {
+      select.innerHTML = '<option value="DEFAULT_BANK" data-bank="Primary Bank">Primary ERP Bank Account (Default)</option>';
+      return;
+    }
+
+    select.innerHTML = validAccounts.map(a => {
+      const accNo = (a.lookupValue || a.value || a.lookupCode || '').trim();
+      const bankName = (a.description || a.lookupCode || 'Bank Account').trim();
+      return `<option value="${escapeHtml(accNo)}" data-bank="${escapeHtml(bankName)}">${escapeHtml(bankName)} (${escapeHtml(accNo)})</option>`;
+    }).join('');
+  }
+
+  function downloadStandardBankTemplate() {
+    if (!window.XLSX) {
+      alert('Spreadsheet engine is initializing. Please wait a moment and try again.');
+      return;
+    }
+
+    const headers = [
+      'Transaction Date *',
+      'Value Date',
+      'Description *',
+      'Reference / UTR',
+      'Amount *',
+      'Direction *',
+      'Balance'
+    ];
+
+    const today = new Date().toISOString().slice(0, 10);
+    const sampleRows = [
+      [today, today, 'NEFT CR - RELIANCE INDUSTRIES LTD - INV-SETTLEMENT', 'UTR98234710123', '150000.00', 'CR', '1250000.00'],
+      [today, today, 'RTGS DR - TATA STEEL LTD - RAW MATERIAL VENDOR', 'UTR98234710456', '85000.00', 'DR', '1165000.00'],
+      [today, today, 'UPI DR - VENDOR ADVANCE PAYMENT', 'UPI48291038472', '24500.00', 'DR', '1140500.00']
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+
+    const headerComments = {
+      0: '[MANDATORY] Transaction Date in YYYY-MM-DD or DD/MM/YYYY format. Cannot be left blank.',
+      1: '[OPTIONAL] Settlement / Clearance Date. If left blank, Transaction Date is used.',
+      2: '[MANDATORY] Transaction narration, payee, or particulars. Cannot be left blank.',
+      3: '[OPTIONAL] Cheque Number, UTR Number, or payment reference. Leave blank if none.',
+      4: '[MANDATORY] Positive transaction amount in INR. Example: 25000.00. Cannot be left blank.',
+      5: '[MANDATORY] Transaction direction: "CR" for Credit/Deposit or "DR" for Debit/Withdrawal. Cannot be left blank.',
+      6: '[OPTIONAL] Running bank balance. Leave blank if not available in statement.'
+    };
+
+    headers.forEach((h, idx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: idx });
+      const cell = ws[cellRef];
+      if (cell) {
+        cell.c = [{ t: headerComments[idx], a: 'Jasvi ERP' }];
+        if (XLSX.utils && typeof XLSX.utils.cell_add_comment === 'function') {
+          XLSX.utils.cell_add_comment(cell, headerComments[idx], 'Jasvi ERP');
+        }
+      }
+    });
+
+    ws['!cols'] = [
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 55 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 16 },
+      { wch: 20 }
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Bank Statement Template');
+
+    const instructions = [
+      ['Jasvi Industries ERP - Standard Bank Statement Template Instructions', 'Guidelines & Rules'],
+      ['Supported Formats', 'Microsoft Excel (.xlsx, .xls) and CSV (.csv)'],
+      ['Mandatory Fields (*)', 'Transaction Date, Description, Amount, and Direction (CR/DR) are mandatory and cannot be blank.'],
+      ['Date Formats', 'Supports YYYY-MM-DD (e.g. 2026-11-01) or DD/MM/YYYY (e.g. 01/11/2026) or DD-MM-YYYY.'],
+      ['Amount Rules', 'Enter positive numerical amounts. Never enter negative numbers. Specify Debit or Credit in the Direction column.'],
+      ['Direction Rules', 'CR = Credit / Money Received / Deposit into account.\nDR = Debit / Money Paid / Withdrawal from account.'],
+      ['Blanks Handling', 'Value Date: If blank, Transaction Date is used automatically.\nReference: If blank, an internal reference (TXN-line) is generated.\nBalance: If blank, running balance is estimated from transaction flow.'],
+      ['Multi-Bank Direct Ingestion', 'Our engine also directly parses native statements from Kotak, HDFC, ICICI, SBI, and Axis Bank automatically!']
+    ];
+    const wsInst = XLSX.utils.aoa_to_sheet(instructions);
+    wsInst['!cols'] = [{ wch: 34 }, { wch: 80 }];
+    XLSX.utils.book_append_sheet(wb, wsInst, 'Instructions');
+
+    XLSX.writeFile(wb, 'Bank_Statement_Template.xlsx');
+  }
+
+  function onUniversalFileDrop(event) {
+    event.preventDefault();
+    const dt = event.dataTransfer;
+    if (dt && dt.files && dt.files.length > 0) {
+      handleUniversalFile(dt.files[0]);
+    }
+  }
+
+  function onUniversalFileSelected(event) {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+      handleUniversalFile(file);
+    }
+  }
+
+  async function handleUniversalFile(file) {
+    if (!file) return;
+    universalFileName = file.name;
+    const sizeKb = (file.size / 1024).toFixed(1);
+
+    const fileMeta = document.getElementById('mubi-file-meta');
+    const fileNameEl = document.getElementById('mubi-filename');
+    const fileSizeEl = document.getElementById('mubi-filesize');
+    const detectedFmtEl = document.getElementById('mubi-detected-format');
+
+    if (fileMeta) fileMeta.style.display = 'flex';
+    if (fileNameEl) fileNameEl.innerText = file.name;
+    if (fileSizeEl) fileSizeEl.innerText = `(${sizeKb} KB)`;
+    if (detectedFmtEl) {
+      detectedFmtEl.innerText = 'Detecting format & pre-validating...';
+      detectedFmtEl.style.background = 'rgba(56,189,248,0.2)';
+      detectedFmtEl.style.color = '#38bdf8';
+    }
+
+    try {
+      const ext = file.name.split('.').pop().toLowerCase();
+      let rawLines = [];
+
+      if (ext === 'xlsx' || ext === 'xls') {
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const sheetName = wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        rawLines = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      } else {
+        const text = await file.text();
+        rawLines = text.split(/\r?\n/).map(l => parseCsvLine(l));
+      }
+
+      universalParsedResult = await parseUniversalBankStatementLines(rawLines, file.name);
+
+      if (detectedFmtEl) {
+        detectedFmtEl.innerText = `Format: ${universalParsedResult.formatName}`;
+        detectedFmtEl.style.background = 'rgba(16,185,129,0.2)';
+        detectedFmtEl.style.color = '#34d399';
+      }
+
+      renderUniversalPreValidation(universalParsedResult);
+    } catch (err) {
+      console.error('Universal statement parsing failed:', err);
+      if (detectedFmtEl) {
+        detectedFmtEl.innerText = 'Parsing Error';
+        detectedFmtEl.style.background = 'rgba(239,68,68,0.2)';
+        detectedFmtEl.style.color = '#f87171';
+      }
+      alert('Could not parse statement: ' + (err.message || err));
+    }
+  }
+
+  async function parseUniversalBankStatementLines(rawLines, fileName) {
+    if (!rawLines || rawLines.length === 0) {
+      throw new Error('The selected file is empty.');
+    }
+
+    // Clean empty rows
+    const lines = rawLines.map(row => (Array.isArray(row) ? row.map(c => String(c != null ? c : '').trim()) : []))
+                          .filter(row => row.some(c => c.length > 0));
+
+    if (lines.length < 2) {
+      throw new Error('File does not contain enough data or header rows.');
+    }
+
+    // Detect format and header row index
+    let detectedFormat = 'Generic Statement';
+    let headerIdx = -1;
+    let colMap = {};
+
+    for (let i = 0; i < Math.min(lines.length, 30); i++) {
+      const row = lines[i];
+      const joined = row.join(' ').toLowerCase();
+
+      // 1. Standard Jasvi Template
+      if (joined.includes('transaction date') && (joined.includes('direction') || joined.includes('amount') || joined.includes('debit'))) {
+        detectedFormat = 'System Bank Template';
+        headerIdx = i;
+        break;
+      }
+      // 2. Kotak Mahindra Bank
+      if (joined.includes('sl. no.') && (joined.includes('dr / cr') || (joined.includes('amount') && joined.includes('balance')))) {
+        detectedFormat = 'Kotak Mahindra Bank';
+        headerIdx = i;
+        break;
+      }
+      // 3. HDFC Bank
+      if (joined.includes('narration') && (joined.includes('withdrawal amt') || joined.includes('deposit amt') || joined.includes('chq./ref.no'))) {
+        detectedFormat = 'HDFC Bank';
+        headerIdx = i;
+        break;
+      }
+      // 4. ICICI Bank
+      if (joined.includes('transaction remarks') || (joined.includes('cheque number') && joined.includes('debit amount'))) {
+        detectedFormat = 'ICICI Bank';
+        headerIdx = i;
+        break;
+      }
+      // 5. SBI Bank
+      if (joined.includes('txn date') || (joined.includes('ref no./cheque no') && (joined.includes('debit') || joined.includes('credit')))) {
+        detectedFormat = 'State Bank of India (SBI)';
+        headerIdx = i;
+        break;
+      }
+      // 6. Axis Bank
+      if (joined.includes('particularsr') || (joined.includes('tran date') && joined.includes('chqno'))) {
+        detectedFormat = 'Axis Bank';
+        headerIdx = i;
+        break;
+      }
+      // 7. Generic (Date + Description + Amount/Balance)
+      if (joined.includes('date') && (joined.includes('description') || joined.includes('particular') || joined.includes('narration')) && (joined.includes('balance') || joined.includes('amount') || joined.includes('credit'))) {
+        detectedFormat = 'Generic Bank Statement';
+        headerIdx = i;
+        break;
+      }
+    }
+
+    if (headerIdx < 0) {
+      // Fallback: look for any row containing 'date'
+      for (let i = 0; i < Math.min(lines.length, 30); i++) {
+        const row = lines[i];
+        if (row.some(c => c.toLowerCase().includes('date'))) {
+          headerIdx = i;
+          break;
+        }
+      }
+    }
+
+    if (headerIdx < 0) {
+      throw new Error('Could not identify transaction header row with date and description columns.');
+    }
+
+    const headerRow = lines[headerIdx];
+    const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    headerRow.forEach((col, idx) => {
+      const n = norm(col);
+      if (['transactiondate', 'txndate', 'trandate', 'date'].includes(n) && colMap.date == null) colMap.date = idx;
+      else if (['valuedate', 'valuedt', 'valdate'].includes(n)) colMap.valueDate = idx;
+      else if (['description', 'narration', 'particulars', 'particularsr', 'transactionremarks', 'txndetails'].includes(n)) colMap.description = idx;
+      else if (['reference', 'refnour', 'chqrefno', 'chequenumber', 'chqno', 'utr', 'referenceno', 'refnochequeno'].includes(n)) colMap.reference = idx;
+      else if (['amount', 'txnamount', 'transactionamount'].includes(n)) colMap.amount = idx;
+      else if (['direction', 'drcr', 'type', 'drcrflag'].includes(n)) colMap.direction = idx;
+      else if (['debit', 'debitamount', 'withdrawalamt', 'dr'].includes(n)) colMap.debit = idx;
+      else if (['credit', 'creditamount', 'depositamt', 'cr'].includes(n)) colMap.credit = idx;
+      else if (['balance', 'closingbalance', 'bal'].includes(n)) colMap.balance = idx;
+    });
+
+    const parsedRows = [];
+    let runningOpening = null;
+    let runningClosing = null;
+    let totalDebitSum = 0;
+    let totalCreditSum = 0;
+
+    for (let r = headerIdx + 1; r < lines.length; r++) {
+      const row = lines[r];
+      if (!row || row.length === 0 || !row.some(c => c.trim().length > 0)) continue;
+
+      const rawDate = colMap.date != null ? row[colMap.date] : row[0];
+      const rawValueDate = colMap.valueDate != null ? row[colMap.valueDate] : rawDate;
+      const rawDesc = colMap.description != null ? row[colMap.description] : (row[2] || row[1] || '');
+      const rawRef = colMap.reference != null ? row[colMap.reference] : (row[3] || '');
+      const rawAmount = colMap.amount != null ? row[colMap.amount] : '';
+      const rawDir = colMap.direction != null ? row[colMap.direction] : '';
+      const rawDebit = colMap.debit != null ? row[colMap.debit] : '';
+      const rawCredit = colMap.credit != null ? row[colMap.credit] : '';
+      const rawBalance = colMap.balance != null ? row[colMap.balance] : '';
+
+      // Skip non-data summary/footer rows
+      if (!rawDate && !rawDesc) continue;
+      const dLower = String(rawDesc).toLowerCase();
+      if (dLower.includes('total') || dLower.includes('opening balance') || dLower.includes('closing balance') || dLower.includes('page ')) continue;
+
+      const errors = [];
+      const lineNum = r + 1;
+
+      // Validate Date
+      let isoDate = parseIsoDate(rawDate);
+      if (!isoDate || isoDate.length < 8 || isoDate.includes('undefined') || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+        errors.push(`Missing or invalid Date format "${rawDate}" (expected YYYY-MM-DD or DD/MM/YYYY)`);
+      }
+
+      let isoValueDate = rawValueDate ? parseIsoDate(rawValueDate) : isoDate;
+      if (!isoValueDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoValueDate)) {
+        isoValueDate = isoDate;
+      }
+
+      // Validate Description
+      const desc = (rawDesc || '').trim();
+      if (!desc) {
+        errors.push('Transaction description / narration is required and cannot be blank');
+      }
+
+      // Calculate Debit, Credit, Amount, Direction
+      let debit = 0;
+      let credit = 0;
+      let amount = 0;
+      let direction = 'CR';
+
+      if (rawDebit || rawCredit) {
+        debit = parseStatementNum(rawDebit);
+        credit = parseStatementNum(rawCredit);
+        if (debit > 0 && credit > 0) {
+          errors.push('Row cannot have both Debit and Credit amounts simultaneously');
+        } else if (debit > 0) {
+          amount = debit;
+          direction = 'DR';
+        } else if (credit > 0) {
+          amount = credit;
+          direction = 'CR';
+        } else {
+          errors.push('Debit or Credit amount must be greater than 0');
+        }
+      } else if (rawAmount) {
+        amount = parseStatementNum(rawAmount);
+        const dirClean = String(rawDir || '').trim().toUpperCase();
+        if (dirClean === 'DR' || dirClean === 'DEBIT' || dirClean === 'WITHDRAWAL') {
+          direction = 'DR';
+          debit = amount;
+        } else if (dirClean === 'CR' || dirClean === 'CREDIT' || dirClean === 'DEPOSIT') {
+          direction = 'CR';
+          credit = amount;
+        } else if (amount < 0) {
+          direction = 'DR';
+          debit = Math.abs(amount);
+          amount = Math.abs(amount);
+        } else {
+          errors.push(`Invalid direction "${rawDir}". Expected "CR" or "DR"`);
+        }
+
+        if (amount <= 0) {
+          errors.push('Transaction amount must be a positive number greater than 0');
+        }
+      } else {
+        errors.push('Missing transaction amount or debit/credit values');
+      }
+
+      const balance = parseStatementNum(rawBalance);
+      if (runningOpening === null) runningOpening = balance - credit + debit;
+      runningClosing = balance;
+
+      totalDebitSum += debit;
+      totalCreditSum += credit;
+
+      const ref = (rawRef || `TXN-${lineNum}`).trim();
+      const fpPayload = `${isoDate}|${ref}|${debit.toFixed(2)}|${credit.toFixed(2)}|${balance.toFixed(2)}`;
+      const fp = await sha256Hex(fpPayload);
+
+      parsedRows.push({
+        line: lineNum,
+        date: isoDate,
+        valueDate: isoValueDate,
+        description: desc,
+        reference: ref,
+        debit,
+        credit,
+        amount,
+        direction,
+        balance,
+        fingerprint: fp,
+        errors,
+        isValid: errors.length === 0
+      });
+    }
+
+    if (parsedRows.length === 0) {
+      throw new Error('No transaction data rows were found in the file.');
+    }
+
+    const validRows = parsedRows.filter(r => r.isValid);
+    const errorRows = parsedRows.filter(r => !r.isValid);
+
+    const fromDate = validRows.length > 0 ? validRows[0].date : (parsedRows[0]?.date || '');
+    const toDate = validRows.length > 0 ? validRows[validRows.length - 1].date : (parsedRows[parsedRows.length - 1]?.date || '');
+
+    return {
+      formatName: detectedFormat,
+      fileName,
+      totalCount: parsedRows.length,
+      validCount: validRows.length,
+      errorCount: errorRows.length,
+      totalDebits: totalDebitSum,
+      totalCredits: totalCreditSum,
+      openingBalance: runningOpening || 0,
+      closingBalance: runningClosing || 0,
+      statementFrom: fromDate,
+      statementTo: toDate,
+      rows: parsedRows,
+      validRows: validRows,
+      errorRows: errorRows
+    };
+  }
+
+  function renderUniversalPreValidation(result) {
+    const metricsBar = document.getElementById('mubi-metrics-bar');
+    const tableContainer = document.getElementById('mubi-table-container');
+    const tbody = document.getElementById('mubi-table-body');
+    const confirmBtn = document.getElementById('mubi-btn-confirm');
+    const footerStatus = document.getElementById('mubi-footer-status');
+
+    if (metricsBar) metricsBar.style.display = 'grid';
+    if (tableContainer) tableContainer.style.display = 'flex';
+
+    document.getElementById('mubi-kpi-total').innerText = result.totalCount;
+    document.getElementById('mubi-kpi-valid').innerText = result.validCount;
+    document.getElementById('mubi-kpi-errors').innerText = result.errorCount;
+    document.getElementById('mubi-kpi-debit').innerText = formatMoney(result.totalDebits);
+    document.getElementById('mubi-kpi-credit').innerText = formatMoney(result.totalCredits);
+
+    if (tbody) {
+      tbody.innerHTML = result.rows.map(r => {
+        const isOk = r.isValid;
+        const rowBg = isOk ? '' : 'background: rgba(239, 68, 68, 0.12); border-left: 4px solid #ef4444;';
+        const badge = isOk
+          ? '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🟢 VALID</span>'
+          : '<span class="badge" style="background: rgba(239, 68, 68, 0.25); color: #f87171; font-weight: 700; padding: 2px 8px; border-radius: 4px;">🔴 ERROR</span>';
+
+        const remarks = isOk
+          ? '<span style="color: #34d399; font-weight: 600;">✓ Ready to import</span>'
+          : `<span style="color: #f87171; font-weight: 700;">❌ ${escapeHtml(r.errors.join('; '))}</span>`;
+
+        return `
+          <tr style="${rowBg}">
+            <td style="text-align: center; vertical-align: middle;">${badge}</td>
+            <td style="text-align: center; font-weight: 600; color: var(--text-dim);">${r.line}</td>
+            <td style="font-family: monospace; font-size: 0.74rem;">${escapeHtml(r.date)}</td>
+            <td style="font-family: monospace; font-size: 0.74rem; color: #38bdf8;">${escapeHtml(r.reference)}</td>
+            <td style="max-width: 280px; word-break: break-word;">${escapeHtml(r.description)}</td>
+            <td style="text-align: right; color: ${r.debit > 0 ? '#fbbf24' : 'var(--text-dim)'}; font-weight: ${r.debit > 0 ? '700' : 'normal'};">
+              ${r.debit > 0 ? formatMoney(r.debit) : '-'}
+            </td>
+            <td style="text-align: right; color: ${r.credit > 0 ? '#34d399' : 'var(--text-dim)'}; font-weight: ${r.credit > 0 ? '700' : 'normal'};">
+              ${r.credit > 0 ? formatMoney(r.credit) : '-'}
+            </td>
+            <td style="text-align: right; font-weight: 600;">
+              ${r.balance ? formatMoney(r.balance) : '-'}
+            </td>
+            <td style="font-size: 0.74rem; vertical-align: middle;">${remarks}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    if (result.errorCount > 0) {
+      if (confirmBtn) {
+        confirmBtn.setAttribute('disabled', 'true');
+        confirmBtn.style.opacity = '0.5';
+        confirmBtn.style.cursor = 'not-allowed';
+      }
+      if (footerStatus) {
+        footerStatus.innerHTML = `<span style="color: #f87171; font-weight: 700;">🔴 Cannot load statement: ${result.errorCount} error row(s) found. Please correct the highlighted errors in your spreadsheet and re-upload.</span>`;
+      }
+    } else if (result.validCount > 0) {
+      if (confirmBtn) {
+        confirmBtn.removeAttribute('disabled');
+        confirmBtn.style.opacity = '1';
+        confirmBtn.style.cursor = 'pointer';
+      }
+      if (footerStatus) {
+        footerStatus.innerHTML = `<span style="color: #34d399; font-weight: 700;">🟢 Validation Passed: All ${result.validCount} transactions are valid and ready to load.</span>`;
+      }
+    } else {
+      if (confirmBtn) {
+        confirmBtn.setAttribute('disabled', 'true');
+        confirmBtn.style.opacity = '0.5';
+      }
+      if (footerStatus) {
+        footerStatus.innerHTML = 'No valid transactions found in file.';
+      }
+    }
+  }
+
+  async function confirmUniversalImport() {
+    if (!universalParsedResult || universalParsedResult.validRows.length === 0) {
+      alert('Please select and validate a statement file before importing.');
+      return;
+    }
+
+    const select = document.getElementById('mubi-bank-account');
+    if (!select || !select.value) {
+      alert('Please select an active target Bank Account from the dropdown.');
+      return;
+    }
+
+    const selectedOption = select.options[select.selectedIndex];
+    const accountNumber = select.value;
+    const bankName = (selectedOption && selectedOption.getAttribute('data-bank')) || 'Bank Account';
+
+    closeUniversalImportModal();
+    showImportProgress('Uploading & Storing Statement...', 60, `Ingesting ${universalParsedResult.validRows.length} transactions into ${bankName}...`);
+
+    const fileFp = await sha256Hex(universalFileName + '|' + universalParsedResult.validRows.length + '|' + universalParsedResult.totalCredits);
+
+    const payload = {
+      bankName: bankName,
+      bankAccount: accountNumber,
+      accountHolder: 'Jasvi Industries Pvt Ltd',
+      statementFrom: universalParsedResult.statementFrom,
+      statementTo: universalParsedResult.statementTo,
+      currency: 'INR',
+      openingBalance: universalParsedResult.openingBalance,
+      closingBalance: universalParsedResult.closingBalance,
+      sourceFingerprint: fileFp,
+      sourceFileName: universalFileName,
+      sourceCsv: universalFileName,
+      importedBy: 'Admin',
+      dryRun: false,
+      rows: universalParsedResult.validRows.map((r, idx) => ({
+        sourceRowNumber: r.line || (idx + 1),
+        transactionTimestamp: `${r.date}T00:00:00`,
+        transactionDate: r.date,
+        valueDate: r.valueDate || r.date,
+        description: r.description,
+        reference: r.reference,
+        debit: r.debit,
+        credit: r.credit,
+        balance: r.balance,
+        transactionFingerprint: r.fingerprint
+      }))
+    };
+
+    try {
+      const res = await window.ReconService.importStatement(payload);
+      showImportProgress('Finishing statement import...', 95, 'Preparing statement audit summary...');
+
+      const totalRows = payload.rows.length;
+      const importedRows = res.importedRows != null ? res.importedRows : (res.batch ? totalRows : 0);
+      const duplicateRows = res.duplicateRows != null ? res.duplicateRows : (res.alreadyImported ? totalRows : Math.max(0, totalRows - importedRows));
+
+      const auditItems = payload.rows.map(r => ({
+        sourceRowNumber: r.sourceRowNumber,
+        transactionDate: r.transactionDate,
+        reference: r.reference,
+        description: r.description,
+        amount: r.debit > 0 ? r.debit : r.credit,
+        direction: r.debit > 0 ? 'DR' : 'CR',
+        status: res.alreadyImported ? 'DUPLICATE_SKIPPED' : 'IMPORTED',
+        remarks: res.alreadyImported ? 'Duplicate statement batch skipped' : 'Successfully imported into statement batch'
+      }));
+
+      currentImportSummary = {
+        batch: res.batch,
+        bankName: payload.bankName,
+        bankAccount: payload.bankAccount,
+        totalRows,
+        importedRows,
+        duplicateRows,
+        errorRows: 0,
+        alreadyImported: !!res.alreadyImported,
+        auditItems
+      };
+
+      hideImportProgress();
+
+      // Show completion audit modal
+      const auditModal = document.getElementById('modal-bank-import-audit');
+      if (auditModal) {
+        document.getElementById('mbia-bank-info').innerText = `${payload.bankName} (${payload.bankAccount})`;
+        document.getElementById('mbia-total').innerText = totalRows;
+        document.getElementById('mbia-imported').innerText = importedRows;
+        document.getElementById('mbia-duplicates').innerText = duplicateRows;
+        document.getElementById('mbia-errors').innerText = '0';
+        auditModal.style.display = 'flex';
+      } else {
+        alert(`Statement Imported Successfully!\n\nImported: ${importedRows} rows\nDuplicates: ${duplicateRows} rows`);
+      }
+
+      // Reload batches and switch to imported batch
+      const targetBatchId = res.batch ? res.batch.id : (res.batchId || null);
+      await loadStatementWorkspace(targetBatchId);
+
+    } catch (err) {
+      console.error('Universal statement import failed:', err);
+      hideImportProgress();
+      alert('Statement import failed: ' + (err.message || 'Server error'));
+    }
+  }
+
+
   return {
     loadStatementWorkspace,
     onBatchSelected,
@@ -3061,7 +3734,13 @@ window.BankStatementController = (function() {
     reverseMatch,
     unignoreTransaction,
 
-    // CSV Import (Desktop FileChooser & Account Resolution Parity)
+    // Universal Multi-Bank & Multi-Format Statement Import
+    openUniversalImportModal,
+    closeUniversalImportModal,
+    downloadStandardBankTemplate,
+    onUniversalFileSelected,
+    onUniversalFileDrop,
+    confirmUniversalImport,
     importStatement,
     onCsvFileSelected,
     confirmAccountAndImport,

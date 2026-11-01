@@ -326,29 +326,49 @@ window.ImportController = (function() {
               const isPassed = d.status === 'PASSED';
               const isSkipped = d.status === 'SKIPPED' || d.action === 'SKIPPED';
               let statusBadge = '';
+              let rowStyle = '';
+
               if (isPassed) {
-                statusBadge = '<span class="badge badge-paid">PASSED</span>';
+                statusBadge = '<span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-weight:700; padding:3px 8px; border-radius:4px;">🟢 PASSED</span>';
               } else if (isSkipped) {
-                statusBadge = '<span class="badge badge-pending">SKIPPED</span>';
+                statusBadge = '<span class="badge" style="background:rgba(245,158,11,0.25); color:#fbbf24; font-weight:700; padding:3px 8px; border-radius:4px;">⚠️ SKIPPED</span>';
+                rowStyle = 'background: rgba(245, 158, 11, 0.06); border-left: 3px solid #f59e0b;';
               } else {
-                statusBadge = '<span class="badge badge-unpaid">FAILED</span>';
+                statusBadge = '<span class="badge" style="background:rgba(239,68,68,0.25); color:#f87171; font-weight:700; padding:3px 8px; border-radius:4px;">🔴 FAILED</span>';
+                rowStyle = 'background: rgba(239, 68, 68, 0.12); border-left: 4px solid #ef4444;';
               }
 
               const displayMsg = d.message || (isPassed ? '✓ Record validated successfully' : 'Validation failed');
-              const rowStyle = !isPassed ? 'background: rgba(239, 68, 68, 0.08); border-left: 3px solid #ef4444;' : '';
+
+              // Color-coded column badges for clear fix visibility
+              const formatCellBadge = (val, defaultText = '✓ Valid') => {
+                const text = String(val || defaultText);
+                if (text.includes('Failed') || text.includes('Error') || text.includes('Missing') || text.includes('Review')) {
+                  return `<span class="badge" style="background:rgba(239,68,68,0.25); color:#f87171; font-weight:700; padding:2px 6px; border-radius:3px;">🔴 ${text}</span>`;
+                }
+                if (text.includes('Passed') || text.includes('Valid') || text.includes('✓')) {
+                  return `<span class="badge" style="background:rgba(16,185,129,0.18); color:#34d399; font-weight:600; padding:2px 6px; border-radius:3px;">✓ Valid</span>`;
+                }
+                return `<span class="badge" style="background:rgba(148,163,184,0.15); color:var(--text-dim); padding:2px 6px; border-radius:3px;">${text}</span>`;
+              };
+
+              const mandBadge = formatCellBadge(d.mandatory);
+              const fmtBadge = formatCellBadge(d.format);
+              const mstBadge = formatCellBadge(d.master);
+              const dataBadge = formatCellBadge(d.data || d.action, isPassed ? '✓ Valid' : '-');
 
               return `
                 <tr class="${isPassed ? 'import-validation-pass-row' : 'import-validation-fail-row'}" style="${rowStyle}">
                   <td style="text-align:center; font-weight:600; color:var(--text-bright);">${d.sourceRows || '-'}</td>
                   <td style="font-family:monospace; color:var(--cyan); font-weight:600;">${d.reference || '-'}</td>
-                  <td style="font-size:0.75rem;">${d.mandatory || '✓ Passed'}</td>
-                  <td style="font-size:0.75rem;">${d.format || '✓ Passed'}</td>
-                  <td style="font-size:0.75rem;">${d.master || '✓ Passed'}</td>
-                  <td style="font-size:0.75rem;">${d.data || d.action || '-'}</td>
+                  <td style="font-size:0.75rem; text-align:center;">${mandBadge}</td>
+                  <td style="font-size:0.75rem; text-align:center;">${fmtBadge}</td>
+                  <td style="font-size:0.75rem; text-align:center;">${mstBadge}</td>
+                  <td style="font-size:0.75rem; text-align:center;">${dataBadge}</td>
                   <td style="font-size:0.75rem; vertical-align:middle;">
                     <div style="display:flex; align-items:center; gap:8px;">
                       ${statusBadge}
-                      <span style="color:${isPassed ? 'var(--text-muted)' : '#f87171'}; font-weight:500; font-size:0.75rem;">${displayMsg}</span>
+                      <span style="color:${isPassed ? 'var(--text-muted)' : '#f87171'}; font-weight:${isPassed ? '500' : '700'}; font-size:0.75rem;">${displayMsg}</span>
                     </div>
                   </td>
                 </tr>

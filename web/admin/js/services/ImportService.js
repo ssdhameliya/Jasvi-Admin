@@ -429,9 +429,9 @@ window.ImportService = (function() {
   // -------------------------------------------------------------
   // 4. TEMPLATE EXCEL GENERATOR (ImportTemplateService.java Parity)
   // -------------------------------------------------------------
-  function getFieldHeaderStyle(field) {
+  function getFieldHeaderStyle(field, isMandatory = false, moduleName = '') {
     const f = (field || '').toLowerCase();
-    if (['invoice_no', 'invoice_date', 'party_code', 'item_code', 'quantity', 'rate', 'name', 'description', 'category_code', 'value_code'].includes(f)) {
+    if (isMandatory || ['invoice_no', 'invoice_date', 'party_code', 'item_code', 'quantity', 'rate', 'name', 'description', 'unit', 'hsn', 'category_code', 'value_code', 'transaction_date', 'amount', 'direction'].includes(f)) {
       return {
         cellStyle: {
           fill: { patternType: 'solid', fgColor: { rgb: 'C00000' } },
@@ -470,26 +470,56 @@ window.ImportService = (function() {
     }
   }
 
-  async function downloadTemplate(moduleName) {
-    try {
-      const resp = await fetch(`/api/master/import/template/${encodeURIComponent(moduleName)}`);
-      if (resp.ok) {
-        const blob = await resp.blob();
-        const safeModule = moduleName.replace(/[^A-Za-z0-9]+/g, '_');
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${safeModule}_Template.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        return;
-      }
-    } catch (backendErr) {
-      // Backend template streaming not available; proceed to client-side SheetJS fallback
+  function getFieldGuidanceDetails(moduleName, field, isMandatory) {
+    const f = (field || '').toLowerCase();
+    let format = 'Text';
+    let blankRule = 'Leave blank to preserve defaults.';
+
+    if (f.includes('date')) {
+      format = 'YYYY-MM-DD (e.g. 2026-11-01) or DD/MM/YYYY';
+      blankRule = isMandatory ? 'Cannot be blank. Must be a valid calendar date.' : 'If blank, current date is used.';
+    } else if (f.includes('gst_percent') || f === 'gst') {
+      format = 'Standard GST rate (0, 5, 12, 18, 28)';
+      blankRule = 'If blank, default 18% GST is applied.';
+    } else if (f === 'gst_type') {
+      format = 'GST (Intra-state) or IGST (Inter-state)';
+      blankRule = 'If blank, default GST is applied.';
+    } else if (['quantity', 'rate', 'price', 'amount', 'taxable_value', 'cgst', 'sgst', 'igst', 'invoice_value', 'balance'].some(k => f.includes(k))) {
+      format = 'Positive numeric decimal (e.g. 1500.00)';
+      blankRule = isMandatory ? 'Cannot be blank. Must be greater than 0.' : 'If blank, 0 is applied.';
+    } else if (f === 'is_active' || f.includes('taxable')) {
+      format = 'true or false';
+      blankRule = 'If blank, default "true" is applied.';
+    } else if (f === 'unit') {
+      format = 'Unit Code (e.g. Nos, KGS, MTR, PCS, SET)';
+      blankRule = 'Cannot be blank. Must match Master unit.';
+    } else if (f === 'hsn') {
+      format = '6 or 8-digit HSN/SAC code (e.g. 73063000)';
+      blankRule = 'Cannot be blank. Required for GST compliance.';
+    } else if (f === 'attachment_files') {
+      format = 'Semicolon-separated file paths (e.g. inv.pdf;receipt.jpg)';
+      blankRule = 'Optional. Leave blank if no attachments.';
+    } else if (f === 'additional_charges') {
+      format = 'Type|Amount|Taxable|GSTPercent;... (e.g. Freight|250|true|18)';
+      blankRule = 'Optional. Leave blank if no additional charges.';
+    } else if (f === 'email') {
+      format = 'Valid email address (e.g. accounts@example.com)';
+      blankRule = isMandatory ? 'Cannot be blank for suppliers.' : 'Leave blank if none.';
+    } else {
+      format = 'Alphanumeric text';
+      blankRule = isMandatory ? 'Cannot be blank. Must provide a valid value.' : 'Optional. Leave blank to preserve existing master values.';
     }
+
+    const comment = isMandatory
+      ? `[MANDATORY] Required field. ${blankRule} Format: ${format}.`
+      : `[OPTIONAL] ${blankRule} Format: ${format}.`;
+
+    return { format, blankRule, comment };
+  }
+
+  async function downloadTemplate(moduleName) {
     const fields = getModuleFields(moduleName);
+    const requiredSet = getRequiredFields(moduleName);
     const examples = getExampleRows(moduleName);
     const company = (window.AuthService && window.AuthService.getCurrentUser()?.company) || 'Jasvi Industries Pvt Ltd';
     const version = (window.DSE_VERSION && window.DSE_VERSION.desktopVersion) || '10.0.34';
@@ -497,52 +527,65 @@ window.ImportService = (function() {
     if (window.XLSX) {
       const wb = XLSX.utils.book_new();
 
-      // Sheet 1: Import Template
-      const templateData = [fields, ...examples];
+      // Sheet 1: Import Template (Headers marked with * for mandatory fields)
+      const displayHeaders = fields.map(f => requiredSet.has(f) ? `${f} *` : f);
+      const templateData = [displayHeaders, ...examples];
       const wsTemplate = XLSX.utils.aoa_to_sheet(templateData);
 
-      // Color-code header cells & add guidance comments (Apache POI parity)
+      // Color-code header cells & add guidance comments with exact format & blank handling
       fields.forEach((field, colIdx) => {
         const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
         const cell = wsTemplate[cellRef];
         if (!cell) return;
-        const style = getFieldHeaderStyle(field);
+        const isMandatory = requiredSet.has(field);
+        const style = getFieldHeaderStyle(field, isMandatory, moduleName);
         cell.s = style.cellStyle;
+
+        const info = getFieldGuidanceDetails(moduleName, field, isMandatory);
+        cell.c = [{ t: info.comment, a: 'Jasvi ERP' }];
         if (XLSX.utils && typeof XLSX.utils.cell_add_comment === 'function') {
-          XLSX.utils.cell_add_comment(cell, style.comment, 'Jasvi ERP');
+          XLSX.utils.cell_add_comment(cell, info.comment, 'Jasvi ERP');
         }
       });
 
       // Auto-fit column widths
       wsTemplate['!cols'] = fields.map((f, colIdx) => {
-        let maxLen = f.length;
+        let maxLen = f.length + 3;
         examples.forEach(r => {
           if (r[colIdx]) maxLen = Math.max(maxLen, String(r[colIdx]).length);
         });
-        return { wch: Math.max(14, maxLen + 3) };
+        return { wch: Math.max(16, maxLen + 4) };
       });
       // Freeze header row
       wsTemplate['!views'] = [{ state: 'frozen', xSplit: 0, ySplit: 1, activeCell: 'A2' }];
 
       XLSX.utils.book_append_sheet(wb, wsTemplate, 'Import Template');
 
-      // Sheet 2: Instructions
-      const guidance = [
-        [`${company} ${version} Import Template`, 'Keep identifier and header names unchanged.'],
-        ['Header Color Coding', '[RED] Mandatory Required Fields | [AMBER/YELLOW] Tax & GST Fields | [BLUE] Charge Columns | [GRAY] Optional Details'],
-        ['Recommended mode', 'Update non-blank fields: blank spreadsheet cells preserve existing master data.'],
-        ['Create new only', 'Existing identifiers are skipped; only new records are created.'],
-        ['Create or update', 'Existing master records are replaced with supplied values.'],
-        ['Skip existing', 'Existing identifiers are never changed.'],
-        ['Financial documents', 'Existing posted Sales and Purchase invoices are always protected and skipped.'],
-        ['GST / IGST', 'For Sales/Purchases use gst_type = GST for intra-state or IGST for inter-state. Enter gst_percent only; ERP calculates tax amounts from line values.'],
-        ['GST calculation', 'GST is calculated as CGST + SGST (equal halves); IGST applies the full GST rate as IGST. Do not enter tax amounts manually.'],
-        ['Multiple Document Charges', 'Sales & Purchases support charge columns (charge_1_type, charge_1_amount, etc.) and unlimited additional_charges (Type|Amount|Taxable|GSTPercent;...).'],
-        ['Multiple Attachments', 'Use attachment_files for semicolon-separated file paths.'],
-        ['Safe process', 'Run Validate only first, review the preview and generated result report, then import.']
+      // Sheet 2: Field Dictionary & Instructions
+      const instructions = [
+        [`${company} ${version} Import Template - ${moduleName}`, 'Comprehensive Field Dictionary & Ingestion Rules'],
+        ['Header Color Coding', '[RED] Mandatory Required Fields (*) | [AMBER] Tax & GST Fields | [BLUE] Charge Columns | [GRAY] Optional Details'],
+        ['Recommended Mode', 'Update non-blank fields: blank spreadsheet cells preserve existing database records.'],
+        ['GST Calculation', 'Enter gst_percent only; ERP automatically calculates CGST + SGST (or IGST) from line totals.'],
+        ['Attachments & Charges', 'attachment_files supports semicolon-separated files. additional_charges supports Type|Amount|Taxable|GSTPercent;...'],
+        ['', ''],
+        ['COLUMN NAME', 'STATUS', 'DATA TYPE', 'EXPECTED FORMAT / ALLOWED VALUES', 'WHAT TO DO IF BLANK']
       ];
-      const wsInstructions = XLSX.utils.aoa_to_sheet(guidance);
-      wsInstructions['!cols'] = [{ wch: 30 }, { wch: 95 }];
+
+      fields.forEach(f => {
+        const isMandatory = requiredSet.has(f);
+        const info = getFieldGuidanceDetails(moduleName, f, isMandatory);
+        instructions.push([
+          isMandatory ? `${f} *` : f,
+          isMandatory ? 'MANDATORY (*)' : 'OPTIONAL',
+          f.includes('date') ? 'Date' : (['quantity', 'rate', 'price', 'amount', 'balance'].some(k => f.includes(k)) ? 'Number' : 'Text'),
+          info.format,
+          info.blankRule
+        ]);
+      });
+
+      const wsInstructions = XLSX.utils.aoa_to_sheet(instructions);
+      wsInstructions['!cols'] = [{ wch: 26 }, { wch: 18 }, { wch: 14 }, { wch: 45 }, { wch: 55 }];
       XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instructions');
 
       const safeModule = moduleName.replace(/[^A-Za-z0-9]+/g, '_');
@@ -1087,15 +1130,21 @@ window.ImportService = (function() {
         if (rowError) {
           failed++;
           errors.push(rowError);
+          const errLower = rowError.toLowerCase();
+          const isMand = errLower.includes('missing') || errLower.includes('mandatory') || errLower.includes('required');
+          const isFmt = errLower.includes('format') || errLower.includes('date') || errLower.includes('mask') || errLower.includes('number');
+          const isMst = errLower.includes('master') || errLower.includes('not found');
+          const isStock = errLower.includes('stock') || errLower.includes('duplicate');
+
           details.push({
             sourceRows,
             reference: invKey,
             status: 'FAILED',
             action: 'NONE',
-            mandatory: 'Review',
-            format: 'Review',
-            master: 'Review',
-            data: 'Review',
+            mandatory: isMand ? 'Failed: Required' : '✓ Valid',
+            format: isFmt ? 'Failed: Format' : '✓ Valid',
+            master: isMst ? 'Failed: Master' : '✓ Valid',
+            data: isStock ? 'Failed: Stock' : 'Blocked',
             message: rowError,
             taxType,
             gstPercent: 0
@@ -1212,15 +1261,21 @@ window.ImportService = (function() {
         if (rowError) {
           failed++;
           errors.push(`Row ${rowNum}: ${rowError}`);
+          const errLower = rowError.toLowerCase();
+          const isMand = errLower.includes('missing') || errLower.includes('mandatory') || errLower.includes('required');
+          const isFmt = errLower.includes('format') || errLower.includes('invalid') || errLower.includes('email') || errLower.includes('date');
+          const isMst = errLower.includes('master') || errLower.includes('not found');
+          const isDup = errLower.includes('duplicate');
+
           details.push({
             sourceRows: String(rowNum),
             reference: refKey || `Row ${rowNum}`,
             status: 'FAILED',
             action: 'NONE',
-            mandatory: 'Review',
-            format: 'Review',
-            master: 'Review',
-            data: 'Review',
+            mandatory: isMand ? 'Failed: Required' : '✓ Valid',
+            format: isFmt ? 'Failed: Format' : '✓ Valid',
+            master: isMst ? 'Failed: Master' : '✓ Valid',
+            data: isDup ? 'Failed: Duplicate' : 'Blocked',
             message: rowError,
             taxType: '',
             gstPercent: 0
